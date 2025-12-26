@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cuRDF"
+version = "0.1.0"
+description = "GPU-accelerated radial distribution functions using Toolkit-Ops + PyTorch with MDAnalysis and ASE adapters."
+requires-python = ">=3.10"
+dependencies = [
+  "torch",
+  "numpy",
+  "nvalchemiops",
+]
+
+[project.optional-dependencies]
+analysis = [
+  "MDAnalysis",
+  "ase",
+  "matplotlib",
+]
+dev = [
+  "pytest",
+]
+
+[project.scripts]
+rdf-gpu = "curdf.cli:main"
