@@ -11,14 +11,14 @@
   - streams MDAnalysis trajectory, optional wrapping, selection string
 
 - `curdf.rdf_from_ase(atoms_or_trajectory, selection=None, ...)`
-  - ASE Atoms or iterable of Atoms; selection by indices
+  - ASE Atoms or iterable of Atoms; selection by indices. Intended for XYZ/extxyz inputs.
 
 ## CLI
 
 `rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selection "name C" --r-max 8 --nbins 200 --device cuda --out rdf.npz --plot rdf.png`
 
 Key flags:
-- `--format`: `mdanalysis` or `ase`
+- `--format`: `mdanalysis` or `ase` (ASE expects XYZ/extxyz)
 - `--selection`: MDAnalysis selection string or comma-separated indices for ASE
 - `--r-min/--r-max/--nbins`
 - `--device`, `--dtype`, `--max-neighbors`

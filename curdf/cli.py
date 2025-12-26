@@ -64,6 +64,10 @@ def main():
         except ImportError:
             sys.exit("ASE is required for --format ase")
 
+        allowed_ext = {".xyz", ".extxyz"}
+        if Path(args.ase_file).suffix.lower() not in allowed_ext:
+            sys.exit(f"ASE mode currently supports {sorted(allowed_ext)}; got {args.ase_file}")
+
         frames = ase.io.read(args.ase_file, index=args.ase_index)
         if isinstance(frames, list):
             atoms_or_traj = frames

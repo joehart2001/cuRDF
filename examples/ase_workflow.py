@@ -1,6 +1,6 @@
 """
 Example: compute g(r) from an ASE Atoms object (in-memory).
-Replace the generated Atoms with `ase.io.read("POSCAR")` for real data.
+Replace the generated Atoms with `ase.io.read("structure.xyz")` for real data (XYZ/extxyz).
 """
 
 import numpy as np

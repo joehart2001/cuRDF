@@ -14,12 +14,12 @@ u = mda.Universe("top.data", "traj.dcd")
 bins, gr = rdf_from_mdanalysis(u, selection="name C", r_min=1.0, r_max=8.0, nbins=200)
 ```
 
-Compute g(r) from ASE:
+Compute g(r) from ASE (XYZ/extxyz):
 ```python
 from ase.io import read
 from curdf import rdf_from_ase
 
-atoms = read("POSCAR")
+atoms = read("structure.xyz")
 bins, gr = rdf_from_ase(atoms, r_min=1.0, r_max=8.0, nbins=200)
 ```
 
@@ -28,7 +28,7 @@ CLI:
 rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selection "name C" --r-max 8 --nbins 200 --device cuda --plot rdf.png --out rdf.npz
 ```
 
-For ASE input:
+For ASE input (XYZ/extxyz):
 ```
-rdf-gpu --format ase --ase-file POSCAR --selection 0,1,2 --r-max 8 --nbins 200
+rdf-gpu --format ase --ase-file structure.xyz --selection 0,1,2 --r-max 8 --nbins 200
 ```
