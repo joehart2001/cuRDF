@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+import warnings
 
 import numpy as np
 
@@ -18,6 +19,8 @@ def _parse_args():
     p.add_argument("--file", help="Structure/trajectory file (ASE or LAMMPSDUMP)")
     p.add_argument("--ase-file", help="(Deprecated) use --file for ASE")
     p.add_argument("--ase-index", default=":", help="ASE index (default all frames)")
+    p.add_argument("--atom-style", default="id type x y z", help="LAMMPS atom_style for MDAnalysis DATAParser")
+    p.add_argument("--atom-types", default=None, help='Optional mapping for LAMMPS type→element, e.g. "1:C,2:O"')
     p.add_argument("--selection", default=None, help="(Deprecated) alias for --selection-a")
     p.add_argument("--selection-a", default=None, help="MDAnalysis selection or ASE comma-separated indices for group A")
     p.add_argument("--selection-b", default=None, help="MDAnalysis selection or ASE comma-separated indices for group B")
@@ -39,12 +42,23 @@ def _parse_args():
 
 
 def main():
+    print("Initializing cuRDF... (loading inputs, building neighbor setup)")
     args = _parse_args()
     torch_dtype = {"float32": "float32", "float64": "float64"}[args.dtype]
     half_fill = args.half_fill
     # Cross-species should use ordered pairs
     if (args.species_b and args.species_b != args.species_a) or args.selection_b:
         half_fill = False
+
+    type_map = None
+    if args.atom_types:
+        try:
+            type_map = {
+                int(k.strip()): v.strip()
+                for k, v in (item.split(":") for item in args.atom_types.split(",") if item.strip())
+            }
+        except Exception:
+            sys.exit('Invalid --atom-types format. Use e.g. "1:C,2:O"')
 
     # Infer format if not provided
     fmt = args.format
@@ -67,8 +81,13 @@ def main():
             import MDAnalysis as mda
         except ImportError:
             sys.exit("MDAnalysis is required for --format mdanalysis")
+        warnings.filterwarnings(
+            "ignore",
+            message="DCDReader currently makes independent timesteps",
+            category=DeprecationWarning,
+        )
 
-        u = mda.Universe(args.topology, *args.trajectory)
+        u = mda.Universe(args.topology, *args.trajectory, atom_style=args.atom_style)
         selection_a = args.selection_a or args.selection
         selection_b = args.selection_b
         from .adapters import rdf_from_mdanalysis
@@ -79,6 +98,7 @@ def main():
             species_b=args.species_b,
             selection=selection_a,
             selection_b=selection_b,
+            atom_types_map=type_map,
             r_min=args.r_min,
             r_max=args.r_max,
             nbins=args.nbins,
@@ -97,6 +117,11 @@ def main():
             import MDAnalysis as mda
         except ImportError:
             sys.exit("MDAnalysis is required for --format lammps-dump")
+        warnings.filterwarnings(
+            "ignore",
+            message="DCDReader currently makes independent timesteps",
+            category=DeprecationWarning,
+        )
 
         try:
             u = mda.Universe(args.trajectory[0], format="LAMMPSDUMP")
@@ -113,6 +138,7 @@ def main():
             species_b=args.species_b,
             selection=selection_a,
             selection_b=selection_b,
+            atom_types_map=type_map,
             r_min=args.r_min,
             r_max=args.r_max,
             nbins=args.nbins,

@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from typing import Sequence
 
 import numpy as np
+from tqdm import tqdm
 
 try:
     import MDAnalysis as mda
@@ -35,6 +36,7 @@ def rdf_from_mdanalysis(
     species_b: str | None = None,
     selection: str | None = None,
     selection_b: str | None = None,
+    atom_types_map: dict | None = None,
     index=None,
     r_min: float = 1.0,
     r_max: float = 6.0,
@@ -55,6 +57,35 @@ def rdf_from_mdanalysis(
         import torch
         torch_dtype = torch.float32
 
+    # Ensure atom names are present
+    has_names = hasattr(universe.atoms, "names")
+    if not has_names:
+        if atom_types_map:
+            try:
+                types = universe.atoms.types
+            except Exception:
+                raise ValueError("Topology lacks names and types; cannot map species.")
+            mapped = []
+            for t in types:
+                key_int = None
+                try:
+                    key_int = int(t)
+                except Exception:
+                    pass
+                name = None
+                if key_int is not None and key_int in atom_types_map:
+                    name = atom_types_map[key_int]
+                elif str(t) in atom_types_map:
+                    name = atom_types_map[str(t)]
+                if name is None:
+                    raise ValueError(f"No mapping in atom_types_map for type '{t}'")
+                mapped.append(name)
+            universe.add_TopologyAttr("name", mapped)
+        elif species_b is None or species_b == species_a:
+            universe.add_TopologyAttr("name", [species_a] * len(universe.atoms))
+        else:
+            raise ValueError("Topology lacks atom names; provide --atom-types mapping for cross-species selections.")
+
     ag_a = universe.select_atoms(f"name {species_a}")
     ag_b = universe.select_atoms(f"name {species_b}") if species_b is not None else ag_a
     if wrap_positions and mda_wrap is not None:
@@ -65,7 +96,7 @@ def rdf_from_mdanalysis(
 
     def frames():
         traj = universe.trajectory[index] if index is not None else universe.trajectory
-        for ts in traj:
+        for ts in tqdm(traj, desc="Frames (MDAnalysis)", unit="frame"):
             cell = _mdanalysis_cell_matrix(ts.dimensions)
             if same_species:
                 yield {
@@ -120,6 +151,7 @@ def rdf(
     species_a: str,
     species_b: str | None = None,
     index=None,
+    atom_types_map: dict | None = None,
     **kwargs,
 ):
     """
@@ -136,6 +168,7 @@ def rdf(
             species_a=species_a,
             species_b=species_b,
             index=index,
+            atom_types_map=atom_types_map,
             **kwargs,
         )
     # MDAnalysis Universe duck check
@@ -145,6 +178,7 @@ def rdf(
             species_a=species_a,
             species_b=species_b,
             index=index,
+            atom_types_map=atom_types_map,
             **kwargs,
         )
     raise TypeError("rdf() expects an ASE Atoms/trajectory or an MDAnalysis Universe")
@@ -157,6 +191,7 @@ def rdf_from_ase(
     species_a: str | None = None,
     species_b: str | None = None,
     index=None,
+    atom_types_map: dict | None = None,
     r_min: float = 1.0,
     r_max: float = 6.0,
     nbins: int = 100,
@@ -189,11 +224,22 @@ def rdf_from_ase(
         else:
             raise TypeError("atoms_or_trajectory must be ASE Atoms or iterable of Atoms")
 
-        for frame in iterable:
+        for frame in tqdm(iterable, desc="Frames (ASE)", unit="frame"):
             if not hasattr(frame, "get_positions"):
                 raise TypeError("Each frame must be ASE Atoms")
             n_atoms = len(frame)
             symbols = frame.get_chemical_symbols()
+
+            if atom_types_map:
+                # map numeric types to element names if provided
+                types = frame.get_array("numbers", int, None)
+                name_list = []
+                for t in types:
+                    name = atom_types_map.get(t) or atom_types_map.get(str(t))
+                    if name is None:
+                        raise ValueError(f"No mapping in atom_types_map for type '{t}'")
+                    name_list.append(name)
+                symbols = name_list
 
             if species_a is not None:
                 idx_a = np.where(np.array(symbols) == species_a)[0]

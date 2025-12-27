@@ -47,3 +47,5 @@ LAMMPS dump (lammpstrj) without a separate topology, via MDAnalysis:
 ```
 curdf --file dump.lammpstrj --species-a C --species-b O --min 1 --max 8 --nbins 200
 ```
+
+If the LAMMPS data file needs a specific atom_style, pass `--atom-style "id type x y z"` (default is the same).

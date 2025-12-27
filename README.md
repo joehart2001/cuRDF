@@ -47,11 +47,6 @@ bins, gr = rdf(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
 ## CLI
 ASE (XYZ/extxyz/ASE .traj/LAMMPS data or dump)
 ```
-curdf --file structure.xyz --species-a C --species-b C --min 1 --max 8 --nbins 200 --device cuda
-```
-
-Cross-species via CLI:
-```
 curdf --file structure.xyz --species-a C --species-b O --min 1 --max 8 --nbins 200 --device cuda
 ```
 
@@ -62,7 +57,9 @@ curdf --file dump.lammpstrj --species-a C --species-b O --min 1 --max 8 --nbins 
 
 MDAnalysis:
 ```
-curdf --topology top.data --trajectory traj.dcd --species-a C --min 1 --max 8 --nbins 200 --device cuda --out results/rdf.npz --plot results/rdf.png
+curdf --topology top.data --trajectory traj.dcd --species-a C --species-b C --min 1 --max 8 --nbins 200 --device cuda --out results/rdf.npz --plot results/rdf.png
+# If the LAMMPS data file needs a specific atom_style, pass --atom-style "id type x y z" (default)
+# If the LAMMPS data file lacks atom names, map types to elements: --atom-types "1:C,2:O"
 ```
 
 `--no-wrap` leaves coordinates unwrapped if you already wrapped them upstream. Half-fill is chosen automatically based on species (same-species → half-fill).

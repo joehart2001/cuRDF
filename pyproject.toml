@@ -5,11 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cuRDF"
 description = "GPU-accelerated radial distribution functions using Toolkit-Ops + PyTorch with MDAnalysis and ASE adapters."
+version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
   "torch",
   "numpy",
-  "nvalchemiops",
+  "nvalchemi-toolkit-ops",
   "MDAnalysis",
   "ase",
   "matplotlib",
