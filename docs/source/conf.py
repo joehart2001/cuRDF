@@ -19,6 +19,14 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
 ]
+autodoc_mock_imports = [
+    "torch",
+    "nvalchemiops",
+    "MDAnalysis",
+    "ase",
+    "matplotlib",
+    "numpy",
+]
 
 templates_path = ['_templates']
 exclude_patterns = []

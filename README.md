@@ -84,8 +84,22 @@ rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selectio
 - Sources in `docs/` (index, quickstart, api).
 - Examples in `examples/` for basic, ASE, and MDAnalysis workflows.
 - Tests in `tests/` (run with `pytest`).
-- Docs deploy via GitHub Pages (workflow `.github/workflows/docs.yml`) and are compatible with Read the Docs (`.readthedocs.yaml`); local build: `sphinx-build -b html docs/source docs/build/html`.
+- Docs deploy via GitHub Pages (workflow `.github/workflows/docs.yml`) and Read the Docs (`.readthedocs.yaml` + `docs/requirements.txt`); local build: `sphinx-build -b html docs/source docs/build/html`.
 
 ## Citation
 DOI: https://doi.org/10.5281/zenodo.1085332119  
 See `CITATION.cff` for how to cite cuRDF in your work.
+
+If you use cuRDF in your work, please cite:
+```
+@software{cuRDF,
+  author    = {Hart, Joseph},
+  title     = {cuRDF: GPU-accelerated radial distribution functions},
+  month     = dec,
+  year      = 2025,
+  publisher = {Zenodo},
+  version   = {0.1.0},
+  doi       = {10.5281/zenodo.1085332119},
+  url       = {https://doi.org/10.5281/zenodo.1085332119}
+}
+```
