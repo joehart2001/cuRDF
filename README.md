@@ -18,6 +18,7 @@ pip install -e .
 ```
 
 ## Quickstart
+Atoms object via ASE:
 ```python
 from ase.io import read
 from curdf import rdf
@@ -31,7 +32,7 @@ bins, gr = rdf(atoms, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=
 
 
 
-Or topology and trajectory:
+Topology and trajectory via MDAnalysis:
 ```python
 import MDAnalysis as mda
 from curdf import rdf
