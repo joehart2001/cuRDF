@@ -18,10 +18,12 @@ def _update_counts(
     r_max: float,
     half_fill: bool,
     max_neighbors: int,
+    group_a_mask: Tensor | None = None,
+    group_b_mask: Tensor | None = None,
 ) -> float:
     """
     Accumulate pair counts for one frame.
-    Returns rho for this frame so the caller can normalize after multiple frames.
+    Returns normalization factor (n_group_a * rho_group_b) so the caller can normalize after multiple frames.
     """
     dr = (r_max - r_min) / (len(edges) - 1)
 
@@ -42,6 +44,10 @@ def _update_counts(
     dist = torch.linalg.norm(dr_vec, dim=1)
 
     valid = (dist >= r_min) & (dist < r_max)
+    if group_a_mask is not None and group_b_mask is not None:
+        src_mask = group_a_mask[src]
+        tgt_mask = group_b_mask[tgt]
+        valid = valid & src_mask & tgt_mask
     dist = dist[valid]
 
     bin_idx = torch.floor((dist - r_min) / dr).to(torch.int64)
@@ -49,16 +55,27 @@ def _update_counts(
     counts.scatter_add_(0, bin_idx, torch.ones_like(bin_idx, dtype=torch.int64))
 
     volume = cell_volume(cell)
-    n_atoms = positions.shape[0]
-    norm_factor = n_atoms * (n_atoms / volume)  # n_atoms * rho
+    if group_a_mask is not None and group_b_mask is not None:
+        n_a = group_a_mask.sum().item()
+        n_b = group_b_mask.sum().item()
+        norm_factor = n_a * (n_b / volume)
+    else:
+        n_atoms = positions.shape[0]
+        norm_factor = n_atoms * (n_atoms / volume)  # n_atoms * rho
     return norm_factor
 
 
-def _finalize_gr(counts: Tensor, edges: Tensor, total_norm: float, half_fill: bool) -> tuple[Tensor, Tensor]:
+def _finalize_gr(
+    counts: Tensor,
+    edges: Tensor,
+    total_norm: float,
+    half_fill: bool,
+    cross_mode: bool,
+) -> tuple[Tensor, Tensor]:
     r1 = edges[:-1]
     r2 = edges[1:]
     shell_vol = (4.0 / 3.0) * math.pi * (r2**3 - r1**3)
-    pair_factor = 2.0 if half_fill else 1.0
+    pair_factor = 1.0 if cross_mode else (2.0 if half_fill else 1.0)
 
     if total_norm == 0:
         raise ValueError("Total normalization is zero; no frames processed?")
@@ -79,6 +96,8 @@ def compute_rdf(
     torch_dtype: torch.dtype = torch.float32,
     half_fill: bool = True,
     max_neighbors: int = 2048,
+    group_a_indices=None,
+    group_b_indices=None,
 ):
     """
     Compute g(r) for a single frame of positions.
@@ -90,6 +109,9 @@ def compute_rdf(
         r_min/r_max/nbins: histogram parameters
         half_fill: True for identical species (unique pairs); False for ordered pairs
         max_neighbors: passed to Toolkit-Ops neighbor list
+        group_a_indices/group_b_indices: optional index lists for cross-species RDF.
+            If provided, counts pairs with src in A and tgt in B. When both are None,
+            uses all atoms (identical-species mode).
     """
     device = torch.device(device)
     pos_t = torch.as_tensor(positions, device=device, dtype=torch_dtype)
@@ -102,6 +124,16 @@ def compute_rdf(
     edges = torch.linspace(r_min, r_max, nbins + 1, device=device, dtype=torch_dtype)
     counts = torch.zeros(nbins, device=device, dtype=torch.int64)
 
+    group_a_mask = group_b_mask = None
+    if group_a_indices is not None:
+        group_a_mask = torch.zeros(pos_t.shape[0], device=device, dtype=torch.bool)
+        group_a_mask[torch.as_tensor(group_a_indices, device=device, dtype=torch.long)] = True
+    if group_b_indices is not None:
+        group_b_mask = torch.zeros(pos_t.shape[0], device=device, dtype=torch.bool)
+        group_b_mask[torch.as_tensor(group_b_indices, device=device, dtype=torch.long)] = True
+    elif group_a_mask is not None:
+        group_b_mask = group_a_mask
+
     total_norm = _update_counts(
         counts,
         pos_t,
@@ -112,9 +144,16 @@ def compute_rdf(
         r_max=r_max,
         half_fill=half_fill,
         max_neighbors=max_neighbors,
+        group_a_mask=group_a_mask,
+        group_b_mask=group_b_mask,
     )
 
-    centers, g_r = _finalize_gr(counts, edges, total_norm, half_fill=half_fill)
+    cross_mode = group_a_mask is not None and group_b_mask is not None and not torch.equal(
+        group_a_mask, group_b_mask
+    )
+    centers, g_r = _finalize_gr(
+        counts, edges, total_norm, half_fill=half_fill, cross_mode=cross_mode
+    )
     return centers.cpu().numpy(), g_r.cpu().numpy()
 
 
@@ -131,17 +170,31 @@ def accumulate_rdf(
 ):
     """
     General accumulator for multiple frames.
-    frames: iterable yielding dicts with keys positions, cell, pbc
+    frames: iterable yielding dicts with keys positions, cell, pbc, and optional group_a_mask/group_b_mask
     """
     device = torch.device(device)
     edges = torch.linspace(r_min, r_max, nbins + 1, device=device, dtype=torch_dtype)
     counts = torch.zeros(nbins, device=device, dtype=torch.int64)
     total_norm = 0.0
 
+    cross_flag = False
+
     for frame in frames:
         pos_t = torch.as_tensor(frame["positions"], device=device, dtype=torch_dtype)
         cell_t = cell_tensor(frame["cell"], device=device, dtype=torch_dtype)
         pbc_t = pbc_tensor(frame["pbc"], device=device)
+        group_a_mask = frame.get("group_a_mask")
+        group_b_mask = frame.get("group_b_mask")
+        if group_a_mask is not None:
+            group_a_mask = torch.as_tensor(group_a_mask, device=device, dtype=torch.bool)
+        if group_b_mask is not None:
+            group_b_mask = torch.as_tensor(group_b_mask, device=device, dtype=torch.bool)
+        elif group_a_mask is not None:
+            group_b_mask = group_a_mask
+        if group_a_mask is not None and group_b_mask is not None and not torch.equal(
+            group_a_mask, group_b_mask
+        ):
+            cross_flag = True
 
         norm = _update_counts(
             counts,
@@ -153,8 +206,16 @@ def accumulate_rdf(
             r_max=r_max,
             half_fill=half_fill,
             max_neighbors=max_neighbors,
+            group_a_mask=group_a_mask,
+            group_b_mask=group_b_mask,
         )
         total_norm += norm
 
-    centers, g_r = _finalize_gr(counts, edges, total_norm, half_fill=half_fill)
+    centers, g_r = _finalize_gr(
+        counts,
+        edges,
+        total_norm,
+        half_fill=half_fill,
+        cross_mode=cross_flag,
+    )
     return centers.cpu().numpy(), g_r.cpu().numpy()

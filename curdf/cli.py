@@ -7,12 +7,19 @@ import numpy as np
 
 def _parse_args():
     p = argparse.ArgumentParser(description="cuRDF: GPU RDF using Toolkit-Ops + PyTorch")
-    p.add_argument("--format", choices=["mdanalysis", "ase"], required=True, help="Input backend")
+    p.add_argument(
+        "--format",
+        choices=["mdanalysis", "ase", "lammps-dump"],
+        required=True,
+        help="Input backend",
+    )
     p.add_argument("--topology", help="Topology file (MDAnalysis)")
     p.add_argument("--trajectory", nargs="+", help="Trajectory file(s) (MDAnalysis)")
     p.add_argument("--ase-file", help="Structure/trajectory file readable by ASE")
     p.add_argument("--ase-index", default=":", help="ASE index (default all frames)")
-    p.add_argument("--selection", default=None, help="MDAnalysis atom selection; ASE comma-separated indices")
+    p.add_argument("--selection", default=None, help="(Deprecated) alias for --selection-a")
+    p.add_argument("--selection-a", default=None, help="MDAnalysis selection or ASE comma-separated indices for group A")
+    p.add_argument("--selection-b", default=None, help="MDAnalysis selection or ASE comma-separated indices for group B")
     p.add_argument("--r-min", type=float, default=1.0)
     p.add_argument("--r-max", type=float, default=6.0)
     p.add_argument("--nbins", type=int, default=100)
@@ -31,6 +38,9 @@ def main():
     args = _parse_args()
     torch_dtype = {"float32": "float32", "float64": "float64"}[args.dtype]
     half_fill = False if args.ordered_pairs else args.half_fill
+    # Cross-species (selection-b) should use ordered pairs
+    if args.selection_b and half_fill:
+        half_fill = False
 
     if args.format == "mdanalysis":
         if args.topology is None or args.trajectory is None:
@@ -41,12 +51,48 @@ def main():
             sys.exit("MDAnalysis is required for --format mdanalysis")
 
         u = mda.Universe(args.topology, *args.trajectory)
-        selection = "all" if args.selection is None else args.selection
+        selection_a = args.selection_a or args.selection
+        selection_b = args.selection_b
+        if selection_a is None:
+            selection_a = "all"
         from .adapters import rdf_from_mdanalysis
 
         bins, gr = rdf_from_mdanalysis(
             u,
-            selection=selection,
+            selection=selection_a,
+            selection_b=selection_b,
+            r_min=args.r_min,
+            r_max=args.r_max,
+            nbins=args.nbins,
+            device=args.device,
+            torch_dtype=getattr(__import__("torch"), torch_dtype),
+            half_fill=half_fill,
+            max_neighbors=args.max_neighbors,
+            wrap_positions=not args.no_wrap,
+        )
+    elif args.format == "lammps-dump":
+        if args.trajectory is None:
+            sys.exit("For lammps-dump format, provide --trajectory (LAMMPS dump / lammpstrj)")
+        try:
+            import MDAnalysis as mda
+        except ImportError:
+            sys.exit("MDAnalysis is required for --format lammps-dump")
+
+        try:
+            u = mda.Universe(args.trajectory[0], format="LAMMPSDUMP")
+        except Exception as exc:
+            sys.exit(f"Failed to load LAMMPS dump: {exc}")
+
+        selection_a = args.selection_a or args.selection
+        selection_b = args.selection_b
+        if selection_a is None:
+            selection_a = "all"
+        from .adapters import rdf_from_mdanalysis
+
+        bins, gr = rdf_from_mdanalysis(
+            u,
+            selection=selection_a,
+            selection_b=selection_b,
             r_min=args.r_min,
             r_max=args.r_max,
             nbins=args.nbins,
@@ -64,9 +110,9 @@ def main():
         except ImportError:
             sys.exit("ASE is required for --format ase")
 
-        allowed_ext = {".xyz", ".extxyz"}
+        allowed_ext = {".xyz", ".extxyz", ".traj"}
         if Path(args.ase_file).suffix.lower() not in allowed_ext:
-            sys.exit(f"ASE mode currently supports {sorted(allowed_ext)}; got {args.ase_file}")
+            sys.exit(f"ASE mode supports {sorted(allowed_ext)}; got {args.ase_file}")
 
         frames = ase.io.read(args.ase_file, index=args.ase_index)
         if isinstance(frames, list):
@@ -74,15 +120,20 @@ def main():
         else:
             atoms_or_traj = frames
 
-        sel_idx = None
-        if args.selection:
-            sel_idx = [int(x) for x in args.selection.split(",") if x.strip()]
+        sel_a = None
+        sel_b = None
+        selection_a = args.selection_a or args.selection
+        if selection_a:
+            sel_a = [int(x) for x in selection_a.split(",") if x.strip()]
+        if args.selection_b:
+            sel_b = [int(x) for x in args.selection_b.split(",") if x.strip()]
 
         from .adapters import rdf_from_ase
 
         bins, gr = rdf_from_ase(
             atoms_or_traj,
-            selection=sel_idx,
+            selection=sel_a,
+            selection_b=sel_b,
             r_min=args.r_min,
             r_max=args.r_max,
             nbins=args.nbins,
