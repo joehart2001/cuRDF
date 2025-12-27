@@ -1,6 +1,6 @@
 # cuRDF
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/) [![Docs](https://readthedocs.org/projects/curdf/badge/?version=latest)](https://curdf.readthedocs.io/en/latest/)
 
 
 CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch. Compatible with ASE (most common) and MDAnalysis.
@@ -80,7 +80,8 @@ rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selectio
 `--ordered-pairs` switches to counting ordered pairs (disable half-fill). `--no-wrap` leaves coordinates unwrapped if you already wrapped them upstream.
 
 ## Docs / examples / tests
-- Docs in `docs/` (index, quickstart, api).
+- Hosted docs (Read the Docs): https://curdf.readthedocs.io/en/latest/
+- Sources in `docs/` (index, quickstart, api).
 - Examples in `examples/` for basic, ASE, and MDAnalysis workflows.
 - Tests in `tests/` (run with `pytest`).
 - Docs deploy via GitHub Pages (workflow `.github/workflows/docs.yml`) and are compatible with Read the Docs (`.readthedocs.yaml`); local build: `sphinx-build -b html docs/source docs/build/html`.
