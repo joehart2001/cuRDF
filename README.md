@@ -22,24 +22,31 @@ pip install -e .
 from ase.io import read
 from curdf import rdf_from_ase
 
-atoms = read("structure.xyz")
-bins, gr = rdf_from_ase(atoms, selection=None, r_min=1.0, r_max=8.0, nbins=200)  # selection=None -> all atoms
-```
+# ASE file formats: XYZ, extxyz, traj
+atoms = read("structure.extxyz")
 
-Cross-species (ASE): provide group A/B indices
-```python
+# Same-species: uses half_fill=True for the neighbour list to avoid double counting and save compute
 bins, gr = rdf_from_ase(
-    atoms,
-    selection=[0,1,2],   # group A
-    selection_b=[3,4,5], # group B
-    r_min=1.0,
-    r_max=8.0,
-    nbins=200,
-    half_fill=False,     # ordered pairs for cross-species
+  atoms, 
+  species_a="C",
+  species_b="C",
+  r_min=1.0,
+  r_max=8.0,
+  nbins=200 # resolution of RDF
+)
+
+# Cross-species
+bins, gr = rdf_from_ase(
+  atoms, 
+  species_a="C",
+  species_b="O",
+  r_min=1.0,
+  r_max=8.0,
+  nbins=200
 )
 ```
 
-ASE file formats: XYZ, extxyz, ASE .traj. (Other formats supported by ASE may work, but these are tested.)
+
 
 MDAnalysis (also supports LAMMPS dump):
 ```python
@@ -47,49 +54,33 @@ import MDAnalysis as mda
 from curdf import rdf_from_mdanalysis
 
 u = mda.Universe("top.data", "traj.dcd")
-bins, gr = curdf.rdf_from_mdanalysis(u, selection="name C", r_min=1.0, r_max=8.0, nbins=200)
+bins, gr = curdf.rdf_from_mdanalysis(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
 ```
-
-Same vs cross-species (why it matters):
-- Same-species default (`selection=None` or single selection) uses unique pairs only (`half_fill=True`), cutting neighbor storage and skipping duplicate A–B/B–A work.
-- Cross-species: pass both groups (`selection` and `selection_b`); we use ordered pairs (`half_fill=False`) so only A–B contributes.
-- Specifying species controls which pairs are built and how normalization is done. Same-species mode saves compute; cross-species needs explicit groups to target only those pairs.
 
 ## CLI
 ASE (XYZ/extxyz/ASE .traj):
 ```
-rdf-gpu --format ase --ase-file structure.xyz --selection 0,1,2 --r-max 8 --nbins 200 --device cuda
+curdf --format ase --file structure.xyz --species-a C --r-max 8 --nbins 200 --device cuda
 ```
 
-Cross-species via CLI (ASE indices or MDAnalysis selections):
+Cross-species via CLI:
 ```
-rdf-gpu --format ase --ase-file structure.xyz --selection-a 0,1,2 --selection-b 3,4,5 --r-max 8 --nbins 200 --device cuda --ordered-pairs
+curdf --format ase --file structure.xyz --species-a C --species-b O --r-max 8 --nbins 200 --device cuda
 ```
-(`--selection-b` automatically disables half-fill so pairs are ordered.)
 
 LAMMPS dump (lammpstrj) via MDAnalysis:
 ```
-rdf-gpu --format lammps-dump --trajectory dump.lammpstrj --selection "all" --r-max 8 --nbins 200 --device cuda
+curdf --format lammps-dump --file dump.lammpstrj --species-a C --species-b O --r-max 8 --nbins 200 --device cuda
 ```
 
 MDAnalysis:
 ```
-rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selection "name C" --r-max 8 --nbins 200 --device cuda --out results/rdf.npz --plot results/rdf.png
+curdf --format mdanalysis --topology top.data --trajectory traj.dcd --species-a C --r-max 8 --nbins 200 --device cuda --out results/rdf.npz --plot results/rdf.png
 ```
 
-`--ordered-pairs` switches to counting ordered pairs (disable half-fill). `--no-wrap` leaves coordinates unwrapped if you already wrapped them upstream.
-
-## Docs / examples / tests
-- Hosted docs (Read the Docs): https://curdf.readthedocs.io/en/latest/
-- Sources in `docs/` (index, quickstart, api).
-- Examples in `examples/` for basic, ASE, and MDAnalysis workflows.
-- Tests in `tests/` (run with `pytest`).
-- Docs deploy via GitHub Pages (workflow `.github/workflows/docs.yml`) and Read the Docs (`.readthedocs.yaml` + `docs/requirements.txt`); local build: `sphinx-build -b html docs/source docs/build/html`. The Pages workflow installs only docs requirements + the package without deps to avoid heavy CUDA installs.
+`--no-wrap` leaves coordinates unwrapped if you already wrapped them upstream. Half-fill is chosen automatically based on species (same-species → half-fill).
 
 ## Citation
-DOI: https://doi.org/10.5281/zenodo.1085332119  
-See `CITATION.cff` for how to cite cuRDF in your work.
-
 If you use cuRDF in your work, please cite:
 ```
 @software{cuRDF,

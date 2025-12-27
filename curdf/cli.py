@@ -15,18 +15,20 @@ def _parse_args():
     )
     p.add_argument("--topology", help="Topology file (MDAnalysis)")
     p.add_argument("--trajectory", nargs="+", help="Trajectory file(s) (MDAnalysis)")
-    p.add_argument("--ase-file", help="Structure/trajectory file readable by ASE")
+    p.add_argument("--file", help="Structure/trajectory file (ASE or LAMMPSDUMP)")
+    p.add_argument("--ase-file", help="(Deprecated) use --file for ASE")
     p.add_argument("--ase-index", default=":", help="ASE index (default all frames)")
     p.add_argument("--selection", default=None, help="(Deprecated) alias for --selection-a")
     p.add_argument("--selection-a", default=None, help="MDAnalysis selection or ASE comma-separated indices for group A")
     p.add_argument("--selection-b", default=None, help="MDAnalysis selection or ASE comma-separated indices for group B")
+    p.add_argument("--species-a", required=True, help="Element symbol for group A (required)")
+    p.add_argument("--species-b", default=None, help="Element symbol for group B (defaults to group A)")
     p.add_argument("--r-min", type=float, default=1.0)
     p.add_argument("--r-max", type=float, default=6.0)
     p.add_argument("--nbins", type=int, default=100)
-    p.add_argument("--device", default="cuda")
+    p.add_argument("--device", default="cuda", help="Device string (e.g., cuda or cpu)")
     p.add_argument("--dtype", choices=["float32", "float64"], default="float32")
-    p.add_argument("--half-fill", action="store_true", default=True, help="Use unique pairs (identical species)")
-    p.add_argument("--ordered-pairs", action="store_true", help="Disable half-fill to count ordered pairs")
+    p.add_argument("--half-fill", action="store_true", default=True, help="Use unique pairs (identical species); auto-set based on species")
     p.add_argument("--max-neighbors", type=int, default=2048)
     p.add_argument("--no-wrap", action="store_true", help="Skip wrapping positions into the cell")
     p.add_argument("--plot", type=Path, help="Optional PNG plot output")
@@ -37,9 +39,9 @@ def _parse_args():
 def main():
     args = _parse_args()
     torch_dtype = {"float32": "float32", "float64": "float64"}[args.dtype]
-    half_fill = False if args.ordered_pairs else args.half_fill
-    # Cross-species (selection-b) should use ordered pairs
-    if args.selection_b and half_fill:
+    half_fill = args.half_fill
+    # Cross-species should use ordered pairs
+    if (args.species_b and args.species_b != args.species_a) or args.selection_b:
         half_fill = False
 
     if args.format == "mdanalysis":
@@ -53,12 +55,12 @@ def main():
         u = mda.Universe(args.topology, *args.trajectory)
         selection_a = args.selection_a or args.selection
         selection_b = args.selection_b
-        if selection_a is None:
-            selection_a = "all"
         from .adapters import rdf_from_mdanalysis
 
         bins, gr = rdf_from_mdanalysis(
             u,
+            species_a=args.species_a,
+            species_b=args.species_b,
             selection=selection_a,
             selection_b=selection_b,
             r_min=args.r_min,
@@ -85,12 +87,12 @@ def main():
 
         selection_a = args.selection_a or args.selection
         selection_b = args.selection_b
-        if selection_a is None:
-            selection_a = "all"
         from .adapters import rdf_from_mdanalysis
 
         bins, gr = rdf_from_mdanalysis(
             u,
+            species_a=args.species_a,
+            species_b=args.species_b,
             selection=selection_a,
             selection_b=selection_b,
             r_min=args.r_min,
@@ -103,18 +105,19 @@ def main():
             wrap_positions=not args.no_wrap,
         )
     else:
-        if args.ase_file is None:
-            sys.exit("For ase format, provide --ase-file")
+        target_file = args.file or args.ase_file
+        if target_file is None:
+            sys.exit("For ase format, provide --file")
         try:
             import ase.io
         except ImportError:
             sys.exit("ASE is required for --format ase")
 
         allowed_ext = {".xyz", ".extxyz", ".traj"}
-        if Path(args.ase_file).suffix.lower() not in allowed_ext:
-            sys.exit(f"ASE mode supports {sorted(allowed_ext)}; got {args.ase_file}")
+        if Path(target_file).suffix.lower() not in allowed_ext:
+            sys.exit(f"ASE mode supports {sorted(allowed_ext)}; got {target_file}")
 
-        frames = ase.io.read(args.ase_file, index=args.ase_index)
+        frames = ase.io.read(target_file, index=args.ase_index)
         if isinstance(frames, list):
             atoms_or_traj = frames
         else:
@@ -134,6 +137,8 @@ def main():
             atoms_or_traj,
             selection=sel_a,
             selection_b=sel_b,
+            species_a=args.species_a,
+            species_b=args.species_b,
             r_min=args.r_min,
             r_max=args.r_max,
             nbins=args.nbins,

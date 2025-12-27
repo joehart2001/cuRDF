@@ -31,7 +31,9 @@ def _mdanalysis_cell_matrix(dimensions):
 
 def rdf_from_mdanalysis(
     universe,
-    selection: str = "all",
+    species_a: str,
+    species_b: str | None = None,
+    selection: str | None = None,
     selection_b: str | None = None,
     r_min: float = 1.0,
     r_max: float = 6.0,
@@ -44,7 +46,7 @@ def rdf_from_mdanalysis(
 ):
     """
     Compute g(r) from an MDAnalysis Universe across all trajectory frames.
-    selection_b: optional second selection for cross-species RDF (A in selection, B in selection_b).
+    species_a/species_b: required element names for groups A/B. If species_b omitted, uses same-species.
     """
     if mda is None:
         raise ImportError("MDAnalysis must be installed for rdf_from_mdanalysis")
@@ -52,16 +54,18 @@ def rdf_from_mdanalysis(
         import torch
         torch_dtype = torch.float32
 
-    ag_a = universe.select_atoms(selection)
-    ag_b = universe.select_atoms(selection_b) if selection_b is not None else ag_a
+    ag_a = universe.select_atoms(f"name {species_a}")
+    ag_b = universe.select_atoms(f"name {species_b}") if species_b is not None else ag_a
     if wrap_positions and mda_wrap is not None:
         ag_wrap = ag_a if selection_b is None else (ag_a | ag_b)
         universe.trajectory.add_transformations(mda_wrap(ag_wrap, compound="atoms"))
 
+    same_species = len(ag_a) == len(ag_b) and ag_a is ag_b
+
     def frames():
         for ts in universe.trajectory:
             cell = _mdanalysis_cell_matrix(ts.dimensions)
-            if selection_b is None:
+            if same_species:
                 yield {
                     "positions": ag_a.positions.astype(np.float32, copy=False),
                     "cell": cell,
@@ -83,7 +87,7 @@ def rdf_from_mdanalysis(
                     "group_b_mask": group_b_mask,
                 }
 
-    if selection_b is not None and half_fill:
+    if not same_species and half_fill:
         half_fill = False  # cross-species -> ordered pairs
 
     return accumulate_rdf(
@@ -113,6 +117,8 @@ def rdf_from_ase(
     atoms_or_trajectory,
     selection: Sequence[int] | None = None,
     selection_b: Sequence[int] | None = None,
+    species_a: str | None = None,
+    species_b: str | None = None,
     r_min: float = 1.0,
     r_max: float = 6.0,
     nbins: int = 100,
@@ -124,7 +130,9 @@ def rdf_from_ase(
 ):
     """
     Compute g(r) from an ASE Atoms or iterable of Atoms (trajectory).
-    selection/selection_b: index lists for group A and group B (cross-species). With only selection provided, computes A–A.
+    selection/selection_b: index lists for group A and group B (cross-species).
+    species_a/species_b: element symbols for group A/B (if provided, override selection indices).
+    With only one group provided, computes same-species RDF.
     """
     if Atoms is None:
         raise ImportError("ASE must be installed for rdf_from_ase")
@@ -144,8 +152,25 @@ def rdf_from_ase(
             if not hasattr(frame, "get_positions"):
                 raise TypeError("Each frame must be ASE Atoms")
             n_atoms = len(frame)
-            idx_a = _extract_selection_indices(selection, n_atoms)
-            idx_b = _extract_selection_indices(selection_b, n_atoms) if selection_b is not None else idx_a
+            symbols = frame.get_chemical_symbols()
+
+            if species_a is not None:
+                idx_a = np.where(np.array(symbols) == species_a)[0]
+            else:
+                idx_a = _extract_selection_indices(selection, n_atoms)
+
+            if species_b is not None:
+                idx_b = np.where(np.array(symbols) == species_b)[0]
+            elif selection_b is not None:
+                idx_b = _extract_selection_indices(selection_b, n_atoms)
+            else:
+                idx_b = idx_a
+
+            if len(idx_a) == 0:
+                raise ValueError(f"No atoms found for species/selection A ({species_a or selection})")
+            if len(idx_b) == 0:
+                raise ValueError(f"No atoms found for species/selection B ({species_b or selection_b or selection})")
+
             pos_all = frame.get_positions(wrap=wrap_positions)
             pos_a = pos_all[idx_a]
             pos_b = pos_all[idx_b]
@@ -165,7 +190,11 @@ def rdf_from_ase(
                 "group_b_mask": group_b_mask,
             }
 
-    if selection_b is not None and half_fill:
+    same_species = (
+        (species_b is None or species_b == species_a)
+        and selection_b is None
+    )
+    if not same_species and half_fill:
         half_fill = False  # cross-species -> ordered pairs
 
     return accumulate_rdf(

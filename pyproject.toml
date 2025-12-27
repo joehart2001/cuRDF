@@ -20,4 +20,4 @@ dependencies = [
 ]
 
 [project.scripts]
-rdf-gpu = "curdf.cli:main"
+curdf = "curdf.cli:main"
