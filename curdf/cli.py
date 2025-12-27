@@ -53,10 +53,8 @@ def main():
             fmt = "mdanalysis"
         elif args.file:
             ext = Path(args.file).suffix.lower()
-            if ext in {".xyz", ".extxyz", ".traj"}:
+            if ext in {".xyz", ".extxyz", ".traj", ".data", ".dump", ".lammpstrj"}:
                 fmt = "ase"
-            elif ext in {".lammpstrj", ".dump"}:
-                fmt = "lammps-dump"
             else:
                 sys.exit(f"Could not infer format from file extension '{ext}'. Provide --format.")
         else:
@@ -133,11 +131,17 @@ def main():
         except ImportError:
             sys.exit("ASE is required for --format ase")
 
-        allowed_ext = {".xyz", ".extxyz", ".traj"}
+        allowed_ext = {".xyz", ".extxyz", ".traj", ".data", ".dump", ".lammpstrj"}
         if Path(target_file).suffix.lower() not in allowed_ext:
             sys.exit(f"ASE mode supports {sorted(allowed_ext)}; got {target_file}")
 
-        frames = ase.io.read(target_file, index=args.ase_index)
+        fmt_hint = {
+            ".data": "lammps-data",
+            ".dump": "lammps-dump-text",
+            ".lammpstrj": "lammps-dump-text",
+        }.get(Path(target_file).suffix.lower())
+
+        frames = ase.io.read(target_file, index=args.ase_index, format=fmt_hint)
         if isinstance(frames, list):
             atoms_or_traj = frames
         else:

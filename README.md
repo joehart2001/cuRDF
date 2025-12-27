@@ -23,11 +23,14 @@ Atoms object via ASE:
 from ase.io import read
 from curdf import rdf
 
-# ASE file formats: XYZ, extxyz, traj
+# ASE file formats: XYZ, extxyz, traj, LAMMPS data/dump (via ASE readers)
 atoms = read("md_run.extxyz")
 
 # Unified helper (dispatches ASE vs MDAnalysis based on object type)
 bins, gr = rdf(atoms, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
+
+# Only use specific frames (e.g., first 1000 of a trajectory)
+bins, gr = rdf(atoms_trajectory, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200, index=":1000")
 ```
 
 
@@ -37,14 +40,14 @@ Topology and trajectory via MDAnalysis:
 import MDAnalysis as mda
 from curdf import rdf
 
-u = mda.Universe("top.data", "traj.dcd")
+u = mda.Universe("topology.data", "traj.dcd")
 bins, gr = rdf(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
 ```
 
 ## CLI
-ASE (XYZ/extxyz/ASE .traj):
+ASE (XYZ/extxyz/ASE .traj/LAMMPS data or dump)
 ```
-curdf --file structure.xyz --species-a C --min 1 --max 8 --nbins 200 --device cuda
+curdf --file structure.xyz --species-a C --species-b C --min 1 --max 8 --nbins 200 --device cuda
 ```
 
 Cross-species via CLI:

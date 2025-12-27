@@ -35,6 +35,7 @@ def rdf_from_mdanalysis(
     species_b: str | None = None,
     selection: str | None = None,
     selection_b: str | None = None,
+    index=None,
     r_min: float = 1.0,
     r_max: float = 6.0,
     nbins: int = 100,
@@ -63,7 +64,8 @@ def rdf_from_mdanalysis(
     same_species = len(ag_a) == len(ag_b) and ag_a is ag_b
 
     def frames():
-        for ts in universe.trajectory:
+        traj = universe.trajectory[index] if index is not None else universe.trajectory
+        for ts in traj:
             cell = _mdanalysis_cell_matrix(ts.dimensions)
             if same_species:
                 yield {
@@ -117,6 +119,7 @@ def rdf(
     obj,
     species_a: str,
     species_b: str | None = None,
+    index=None,
     **kwargs,
 ):
     """
@@ -132,6 +135,7 @@ def rdf(
             obj,
             species_a=species_a,
             species_b=species_b,
+            index=index,
             **kwargs,
         )
     # MDAnalysis Universe duck check
@@ -140,6 +144,7 @@ def rdf(
             obj,
             species_a=species_a,
             species_b=species_b,
+            index=index,
             **kwargs,
         )
     raise TypeError("rdf() expects an ASE Atoms/trajectory or an MDAnalysis Universe")
@@ -151,6 +156,7 @@ def rdf_from_ase(
     selection_b: Sequence[int] | None = None,
     species_a: str | None = None,
     species_b: str | None = None,
+    index=None,
     r_min: float = 1.0,
     r_max: float = 6.0,
     nbins: int = 100,
@@ -162,6 +168,7 @@ def rdf_from_ase(
 ):
     """
     Compute g(r) from an ASE Atoms or iterable of Atoms (trajectory).
+    
     selection/selection_b: index lists for group A and group B (cross-species).
     species_a/species_b: element symbols for group A/B (if provided, override selection indices).
     With only one group provided, computes same-species RDF.
@@ -175,6 +182,8 @@ def rdf_from_ase(
     def _frames_iter():
         if hasattr(atoms_or_trajectory, "get_positions"):
             iterable = (atoms_or_trajectory,)
+        elif index is not None:
+            iterable = atoms_or_trajectory[index]
         elif isinstance(atoms_or_trajectory, Iterable):
             iterable = atoms_or_trajectory
         else:

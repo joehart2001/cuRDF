@@ -14,6 +14,8 @@ atoms = read("structure.xyz")
 
 # Unified helper: dispatches ASE vs MDAnalysis based on object type
 bins, gr = rdf(atoms, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
+# Only use specific frames (e.g., first 1000 of a trajectory)
+bins, gr = rdf(atoms_trajectory, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200, index=":1000")
 ```
 
 Compute g(r) from an MDAnalysis trajectory:
@@ -30,7 +32,7 @@ CLI:
 curdf --topology top.data --trajectory traj.dcd --species-a C --min 1 --max 8 --nbins 200 --device cuda --plot rdf.png --out rdf.npz
 ```
 
-For ASE input (XYZ/extxyz/ASE .traj):
+For ASE input (XYZ/extxyz/ASE .traj/LAMMPS data or dump via ASE readers):
 ```
 curdf --file structure.xyz --species-a C --min 1 --max 8 --nbins 200
 ```
