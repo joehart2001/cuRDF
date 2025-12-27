@@ -7,5 +7,5 @@ GPU-accelerated radial distribution functions using Toolkit-Ops + PyTorch, with 
 
 Install:
 ```
-pip install -e .[analysis]
+pip install -e .
 ```

@@ -10,18 +10,10 @@ dependencies = [
   "torch",
   "numpy",
   "nvalchemiops",
-]
-
-[project.optional-dependencies]
-analysis = [
   "MDAnalysis",
   "ase",
   "matplotlib",
-]
-dev = [
   "pytest",
-]
-docs = [
   "sphinx",
   "sphinx-rtd-theme",
   "myst-parser",

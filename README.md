@@ -10,13 +10,11 @@ Latest release:
 ```
 pip install cuRDF
 ```
-With MDAnalysis/ASE/matplotlib extras:
+For development:
 ```
-pip install "cuRDF[analysis]"
-```
-For development in-place:
-```
-pip install -e .[analysis,dev]
+git clone https://github.com/joehart2001/curdf.git
+cd curdf
+pip install -e .
 ```
 
 ## Library usage

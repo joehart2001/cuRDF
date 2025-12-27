@@ -2,7 +2,7 @@
 
 Install (editable for development):
 ```
-pip install -e .[analysis]
+pip install -e .
 ```
 
 Compute g(r) from ASE (XYZ/extxyz/ASE .traj):
