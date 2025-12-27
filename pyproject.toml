@@ -22,6 +22,11 @@ analysis = [
 dev = [
   "pytest",
 ]
+docs = [
+  "sphinx",
+  "sphinx-rtd-theme",
+  "myst-parser",
+]
 
 [project.scripts]
 rdf-gpu = "curdf.cli:main"
