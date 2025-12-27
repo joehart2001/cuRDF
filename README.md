@@ -74,3 +74,4 @@ rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selectio
 - Docs in `docs/` (index, quickstart, api).
 - Examples in `examples/` for basic, ASE, and MDAnalysis workflows.
 - Tests in `tests/` (run with `pytest` or `pip install -e .[dev]` first).
+- Build Sphinx docs with `pip install -e .[docs]` then `sphinx-build -b html docs/source docs/build/html` (footer: "Built with Sphinx using a theme provided by Read the Docs.").
