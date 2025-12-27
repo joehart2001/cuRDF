@@ -5,15 +5,18 @@
 
 CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch. Compatible with ASE and MDAnalysis.
 
-[![Tests](https://github.com/josephhart/amorphous-carbon/actions/workflows/tests.yml/badge.svg)](https://github.com/josephhart/amorphous-carbon/actions/workflows/tests.yml)
-
-## Install (editable)
+## Install
+Latest release:
 ```
-pip install -e .
+pip install cuRDF
 ```
-Add `[analysis]` extras if you want MDAnalysis/ASE/matplotlib:
+With MDAnalysis/ASE/matplotlib extras:
 ```
-pip install -e .[analysis]
+pip install "cuRDF[analysis]"
+```
+For development in-place:
+```
+pip install -e .[analysis,dev]
 ```
 
 ## Library usage
