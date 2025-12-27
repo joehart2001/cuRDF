@@ -1,2 +1,4 @@
+# API
+
 ```{include} ../../api.md
 ```
