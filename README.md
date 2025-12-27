@@ -1,5 +1,8 @@
 # cuRDF
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119)
+
+
 CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch. Compatible with ASE and MDAnalysis.
 
 [![PyPI version](https://badge.fury.io/py/curdf.svg)](https://badge.fury.io/py/curdf)
@@ -75,3 +78,6 @@ rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selectio
 - Examples in `examples/` for basic, ASE, and MDAnalysis workflows.
 - Tests in `tests/` (run with `pytest` or `pip install -e .[dev]` first).
 - Build Sphinx docs with `pip install -e .[docs]` then `sphinx-build -b html docs/source docs/build/html` (footer: "Built with Sphinx using a theme provided by Read the Docs.").
+
+## Citation
+See `CITATION.cff` for how to cite cuRDF in your work.
