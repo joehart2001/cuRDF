@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use cuRDF, please cite it as below."
+type: software
+title: "cuRDF: GPU-accelerated radial distribution functions"
+authors:
+  - family-names: Hart
+    given-names: Joseph
+    orcid: "https://orcid.org/0009-0005-0461-1436"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.1085332119
+repository-code: "https://github.com/joehart2001/cuRDF"
+url: "https://github.com/joehart2001/cuRDF"
+license: MIT
+year: 2025
