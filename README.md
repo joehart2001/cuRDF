@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/)
 
 
-CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch. Compatible with ASE and MDAnalysis.
+CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch. Compatible with ASE (most common) and MDAnalysis.
 
 ## Install
 Latest release:
@@ -17,16 +17,7 @@ cd curdf
 pip install -e .
 ```
 
-## Library usage
-```python
-import curdf
-import MDAnalysis as mda
-
-u = mda.Universe("top.data", "traj.dcd")
-bins, gr = curdf.rdf_from_mdanalysis(u, selection="name C", r_min=1.0, r_max=8.0, nbins=200)
-```
-
-ASE first (XYZ/extxyz/ASE .traj):
+## Quickstart
 ```python
 from ase.io import read
 from curdf import rdf_from_ase
@@ -37,10 +28,20 @@ bins, gr = rdf_from_ase(atoms, selection=None, r_min=1.0, r_max=8.0, nbins=200) 
 
 Cross-species (ASE): provide group A/B indices
 ```python
-bins, gr = rdf_from_ase(atoms, selection=[0,1,2], selection_b=[3,4,5], r_min=1.0, r_max=8.0, nbins=200, half_fill=False)
+bins, gr = rdf_from_ase(
+    atoms,
+    selection=[0,1,2],   # group A
+    selection_b=[3,4,5], # group B
+    r_min=1.0,
+    r_max=8.0,
+    nbins=200,
+    half_fill=False,     # ordered pairs for cross-species
+)
 ```
 
-MDAnalysis (explicit dependency required; also supports LAMMPS dump):
+ASE file formats: XYZ, extxyz, ASE .traj. (Other formats supported by ASE may work, but these are tested.)
+
+MDAnalysis (also supports LAMMPS dump):
 ```python
 import MDAnalysis as mda
 from curdf import rdf_from_mdanalysis
@@ -48,6 +49,11 @@ from curdf import rdf_from_mdanalysis
 u = mda.Universe("top.data", "traj.dcd")
 bins, gr = curdf.rdf_from_mdanalysis(u, selection="name C", r_min=1.0, r_max=8.0, nbins=200)
 ```
+
+Same vs cross-species (why it matters):
+- Same-species default (`selection=None` or single selection) uses unique pairs only (`half_fill=True`), cutting neighbor storage and skipping duplicate A–B/B–A work.
+- Cross-species: pass both groups (`selection` and `selection_b`); we use ordered pairs (`half_fill=False`) so only A–B contributes.
+- Specifying species controls which pairs are built and how normalization is done. Same-species mode saves compute; cross-species needs explicit groups to target only those pairs.
 
 ## CLI
 ASE (XYZ/extxyz/ASE .traj):
@@ -76,8 +82,9 @@ rdf-gpu --format mdanalysis --topology top.data --trajectory traj.dcd --selectio
 ## Docs / examples / tests
 - Docs in `docs/` (index, quickstart, api).
 - Examples in `examples/` for basic, ASE, and MDAnalysis workflows.
-- Tests in `tests/` (run with `pytest` or `pip install -e .[dev]` first).
-- Build Sphinx docs with `pip install -e .[docs]` then `sphinx-build -b html docs/source docs/build/html` (footer: "Built with Sphinx using a theme provided by Read the Docs.").
+- Tests in `tests/` (run with `pytest`).
+- Docs deploy via GitHub Pages (workflow `.github/workflows/docs.yml`) and are compatible with Read the Docs (`.readthedocs.yaml`); local build: `sphinx-build -b html docs/source docs/build/html`.
 
 ## Citation
+DOI: https://doi.org/10.5281/zenodo.1085332119  
 See `CITATION.cff` for how to cite cuRDF in your work.

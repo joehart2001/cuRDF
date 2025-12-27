@@ -9,3 +9,7 @@ Install:
 ```
 pip install -e .
 ```
+
+## Citation
+- DOI: https://doi.org/10.5281/zenodo.1085332119
+- See `CITATION.cff` for citation metadata.

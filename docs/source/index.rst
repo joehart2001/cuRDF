@@ -14,3 +14,8 @@ GPU-accelerated radial distribution functions with Toolkit-Ops + PyTorch. Built 
 
    quickstart
    api
+
+Citation
+--------
+- DOI: https://doi.org/10.5281/zenodo.1085332119
+- See ``CITATION.cff`` in the repo for citation metadata.
