@@ -10,8 +10,8 @@ def _parse_args():
     p.add_argument(
         "--format",
         choices=["mdanalysis", "ase", "lammps-dump"],
-        required=True,
-        help="Input backend",
+        required=False,
+        help="Input backend (optional; auto-detected from inputs)",
     )
     p.add_argument("--topology", help="Topology file (MDAnalysis)")
     p.add_argument("--trajectory", nargs="+", help="Trajectory file(s) (MDAnalysis)")
@@ -23,8 +23,10 @@ def _parse_args():
     p.add_argument("--selection-b", default=None, help="MDAnalysis selection or ASE comma-separated indices for group B")
     p.add_argument("--species-a", required=True, help="Element symbol for group A (required)")
     p.add_argument("--species-b", default=None, help="Element symbol for group B (defaults to group A)")
-    p.add_argument("--r-min", type=float, default=1.0)
-    p.add_argument("--r-max", type=float, default=6.0)
+    p.add_argument("--min", dest="r_min", type=float, default=1.0, help="Minimum r")
+    p.add_argument("--max", dest="r_max", type=float, default=6.0, help="Maximum r")
+    p.add_argument("--r-min", dest="r_min", type=float, help="(Deprecated) use --min")
+    p.add_argument("--r-max", dest="r_max", type=float, help="(Deprecated) use --max")
     p.add_argument("--nbins", type=int, default=100)
     p.add_argument("--device", default="cuda", help="Device string (e.g., cuda or cpu)")
     p.add_argument("--dtype", choices=["float32", "float64"], default="float32")
@@ -44,7 +46,23 @@ def main():
     if (args.species_b and args.species_b != args.species_a) or args.selection_b:
         half_fill = False
 
-    if args.format == "mdanalysis":
+    # Infer format if not provided
+    fmt = args.format
+    if fmt is None:
+        if args.topology and args.trajectory:
+            fmt = "mdanalysis"
+        elif args.file:
+            ext = Path(args.file).suffix.lower()
+            if ext in {".xyz", ".extxyz", ".traj"}:
+                fmt = "ase"
+            elif ext in {".lammpstrj", ".dump"}:
+                fmt = "lammps-dump"
+            else:
+                sys.exit(f"Could not infer format from file extension '{ext}'. Provide --format.")
+        else:
+            sys.exit("Provide --format or inputs to infer it (topology+trajectory, or --file).")
+
+    if fmt == "mdanalysis":
         if args.topology is None or args.trajectory is None:
             sys.exit("For mdanalysis format, provide --topology and --trajectory")
         try:
@@ -72,9 +90,11 @@ def main():
             max_neighbors=args.max_neighbors,
             wrap_positions=not args.no_wrap,
         )
-    elif args.format == "lammps-dump":
+    elif fmt == "lammps-dump":
         if args.trajectory is None:
-            sys.exit("For lammps-dump format, provide --trajectory (LAMMPS dump / lammpstrj)")
+            if args.file is None:
+                sys.exit("For lammps-dump format, provide --file or --trajectory (LAMMPS dump / lammpstrj)")
+            args.trajectory = [args.file]
         try:
             import MDAnalysis as mda
         except ImportError:
@@ -104,7 +124,7 @@ def main():
             max_neighbors=args.max_neighbors,
             wrap_positions=not args.no_wrap,
         )
-    else:
+    else:  # ase
         target_file = args.file or args.ase_file
         if target_file is None:
             sys.exit("For ase format, provide --file")

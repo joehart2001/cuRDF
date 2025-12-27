@@ -113,6 +113,38 @@ def _extract_selection_indices(selection: Sequence[int] | None, n_atoms: int):
     return idx
 
 
+def rdf(
+    obj,
+    species_a: str,
+    species_b: str | None = None,
+    **kwargs,
+):
+    """
+    Unified entry point:
+      - ASE: pass an Atoms or iterable of Atoms
+      - MDAnalysis: pass a Universe
+
+    Additional kwargs are forwarded to rdf_from_ase or rdf_from_mdanalysis.
+    """
+    # Lazy imports to avoid hard deps
+    if hasattr(obj, "get_positions"):  # ASE Atoms
+        return rdf_from_ase(
+            obj,
+            species_a=species_a,
+            species_b=species_b,
+            **kwargs,
+        )
+    # MDAnalysis Universe duck check
+    if hasattr(obj, "trajectory") and hasattr(obj, "select_atoms"):
+        return rdf_from_mdanalysis(
+            obj,
+            species_a=species_a,
+            species_b=species_b,
+            **kwargs,
+        )
+    raise TypeError("rdf() expects an ASE Atoms/trajectory or an MDAnalysis Universe")
+
+
 def rdf_from_ase(
     atoms_or_trajectory,
     selection: Sequence[int] | None = None,
