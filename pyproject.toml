@@ -3,22 +3,21 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "curdf"
-description = "GPU-accelerated radial distribution functions using Toolkit-Ops + PyTorch with MDAnalysis and ASE adapters."
+name = "cuRDF"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
-  "torch",
   "numpy",
-  "nvalchemi-toolkit-ops",
+  "torch>=2.8.0",
+  "nvalchemi-toolkit-ops>=0.2.0",
   "MDAnalysis",
   "ase",
   "matplotlib",
-  "pytest",
-  "sphinx",
-  "sphinx-rtd-theme",
-  "myst-parser",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
 
 [project.scripts]
 curdf = "curdf.cli:main"
