@@ -78,7 +78,7 @@ def _finalize_gr(
     pair_factor = 1.0 if cross_mode else (2.0 if half_fill else 1.0)
 
     if total_norm == 0:
-        raise ValueError("Total normalization is zero; no frames processed?")
+        raise ValueError("Total normalization is zero; no frames processed or selections/species empty?")
     g_r = (pair_factor * counts.to(r1.dtype)) / (shell_vol * total_norm)
     centers = (edges[:-1] + edges[1:]) * 0.5
     return centers, g_r

@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/)
 
 
-CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops) O(N) neighbor lists and PyTorch. Compatible with ASE Atoms objects or MDAnalysis Universes.
+CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops) O(N) neighbor lists and PyTorch. Compatible with ASE Atoms or MDAnalysis Universe objects.
 
 ## Install
 Latest release:
@@ -33,8 +33,12 @@ bins, gr = rdf(
   species_b="O", # species b can be the same as species a
   r_min=1.0,
   r_max=8.0,
-  nbins=200 # resolution of rdf histogram binning
+  nbins=200, # resolution of rdf histogram binning
+  output = "results/rdf.csv"
 )
+
+# Plot RDF
+plot_rdf(bins, gr, path="results/rdf.png")
 ```
 
 
@@ -44,7 +48,7 @@ MDAnalysis Universe (topology and trajectory):
 import MDAnalysis as mda
 from curdf import rdf
 
-u = mda.Universe("topology.data", "traj.dcd")
+u = mda.Universe("topology.data", "traj.dcd", atom_style="id type x y z")
 bins, gr = rdf(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
 ```
 

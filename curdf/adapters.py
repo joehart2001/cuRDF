@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from typing import Sequence
 
 import numpy as np
+from pathlib import Path
 from tqdm import tqdm
 
 try:
@@ -88,6 +89,10 @@ def rdf_from_mdanalysis(
 
     ag_a = universe.select_atoms(f"name {species_a}")
     ag_b = universe.select_atoms(f"name {species_b}") if species_b is not None else ag_a
+    if len(ag_a) == 0:
+        raise ValueError(f"No atoms found for species_a='{species_a}' (check atom names or --atom-types mapping)")
+    if len(ag_b) == 0:
+        raise ValueError(f"No atoms found for species_b='{species_b or species_a}' (check atom names or --atom-types mapping)")
     if wrap_positions and mda_wrap is not None:
         ag_wrap = ag_a if selection_b is None else (ag_a | ag_b)
         universe.trajectory.add_transformations(mda_wrap(ag_wrap, compound="atoms"))
@@ -152,6 +157,8 @@ def rdf(
     species_b: str | None = None,
     index=None,
     atom_types_map: dict | None = None,
+    outdir=None,
+    output: str | None = None,
     **kwargs,
 ):
     """
@@ -160,10 +167,11 @@ def rdf(
       - MDAnalysis: pass a Universe
 
     Additional kwargs are forwarded to rdf_from_ase or rdf_from_mdanalysis.
+    If output is provided, saves bins/gr to that path (npz). If outdir is provided, saves to outdir/rdf.npz.
     """
     # Lazy imports to avoid hard deps
     if hasattr(obj, "get_positions"):  # ASE Atoms
-        return rdf_from_ase(
+        bins, gr = rdf_from_ase(
             obj,
             species_a=species_a,
             species_b=species_b,
@@ -171,9 +179,11 @@ def rdf(
             atom_types_map=atom_types_map,
             **kwargs,
         )
+        _maybe_save(outdir, output, bins, gr)
+        return bins, gr
     # MDAnalysis Universe duck check
     if hasattr(obj, "trajectory") and hasattr(obj, "select_atoms"):
-        return rdf_from_mdanalysis(
+        bins, gr = rdf_from_mdanalysis(
             obj,
             species_a=species_a,
             species_b=species_b,
@@ -181,7 +191,44 @@ def rdf(
             atom_types_map=atom_types_map,
             **kwargs,
         )
+        _maybe_save(outdir, output, bins, gr)
+        return bins, gr
     raise TypeError("rdf() expects an ASE Atoms/trajectory or an MDAnalysis Universe")
+
+
+def _maybe_save(outdir, output, bins, gr):
+    target = None
+    if output:
+        target = Path(output)
+        target.parent.mkdir(parents=True, exist_ok=True)
+    elif outdir:
+        path = Path(outdir)
+        path.mkdir(parents=True, exist_ok=True)
+        target = path / "rdf.npz"
+    else:
+        return
+
+    suffix = target.suffix.lower()
+    if suffix == ".npz":
+        np.savez(target, bins=bins, gr=gr)
+    elif suffix in {".csv", ".tsv"}:
+        sep = "," if suffix == ".csv" else "\t"
+        import pandas as pd
+
+        df = pd.DataFrame({"r": bins, "g_r": gr})
+        df.to_csv(target, sep=sep, index=False)
+    elif suffix in {".json"}:
+        import json
+
+        with open(target, "w") as f:
+            json.dump({"bins": bins.tolist(), "g_r": gr.tolist()}, f)
+    elif suffix in {".pkl", ".pickle"}:
+        import pickle
+
+        with open(target, "wb") as f:
+            pickle.dump({"bins": bins, "g_r": gr}, f, protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+        np.savez(target, bins=bins, gr=gr)
 
 
 def rdf_from_ase(
