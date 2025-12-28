@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cuRDF"
+name = "curdf"
 description = "GPU-accelerated radial distribution functions using Toolkit-Ops + PyTorch with MDAnalysis and ASE adapters."
 version = "0.1.0"
 requires-python = ">=3.10"
