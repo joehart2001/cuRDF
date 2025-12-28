@@ -5,7 +5,7 @@
 
 CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch. Compatible with ASE (most common) and MDAnalysis.
 
-Check out NVIDIA ALCHEMI Toolkit-Ops [GitHub](https://github.com/NVIDIA/nvalchemi-toolkit-ops)
+Check out [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops)
 
 ## Install
 Latest release:
