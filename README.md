@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/)
 
 
-CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops) O(N) neighbor lists and PyTorch. Compatible with ASE (most common) and MDAnalysis.
+CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops) O(N) neighbor lists and PyTorch. Compatible with ASE Atoms objects or MDAnalysis Universes.
 
 ## Install
 Latest release:
@@ -18,24 +18,28 @@ pip install -e .
 ```
 
 ## Quickstart
-Atoms object via ASE:
+ASE Atoms object:
 ```python
 from ase.io import read
 from curdf import rdf
 
-# ASE file formats: XYZ, extxyz, traj, LAMMPS data/dump (via ASE readers)
+# Load trajectory or frame e.g. XYZ, extxyz, traj, LAMMPS data/dump
 atoms = read("md_run.extxyz")
 
-# Unified helper (dispatches ASE vs MDAnalysis based on object type)
-bins, gr = rdf(atoms, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
-
-# Only use specific frames (e.g., first 1000 of a trajectory)
-bins, gr = rdf(atoms_trajectory, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200, index=":1000")
+# Compute RDF between species C and O from 1.0 to 8.0 Å
+bins, gr = rdf(
+  atoms,
+  species_a="C",
+  species_b="O", # species b can be the same as species a
+  r_min=1.0,
+  r_max=8.0,
+  nbins=200 # resolution of rdf histogram binning
+)
 ```
 
 
 
-Topology and trajectory via MDAnalysis:
+MDAnalysis Universe (topology and trajectory):
 ```python
 import MDAnalysis as mda
 from curdf import rdf
@@ -45,7 +49,7 @@ bins, gr = rdf(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
 ```
 
 ## CLI
-ASE (XYZ/extxyz/ASE .traj/LAMMPS data or dump)
+ASE (XYZ/extxyz/traj/LAMMPS data or dump)
 ```
 curdf --file structure.xyz --species-a C --species-b O --min 1 --max 8 --nbins 200 --device cuda
 ```
