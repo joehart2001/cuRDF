@@ -19,6 +19,3 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest"]
 docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
-
-[project.scripts]
-curdf = "curdf.cli:main"

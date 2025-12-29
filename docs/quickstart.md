@@ -27,25 +27,5 @@ u = mda.Universe("top.data", "traj.dcd")
 bins, gr = rdf(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
 ```
 
-CLI:
-```
-curdf --topology top.data --trajectory traj.dcd --species-a C --min 1 --max 8 --nbins 200 --device cuda --plot rdf.png --out rdf.npz
-```
-
-For ASE input (XYZ/extxyz/ASE .traj/LAMMPS data or dump via ASE readers):
-```
-curdf --file structure.xyz --species-a C --min 1 --max 8 --nbins 200
-```
-
-Cross-species via CLI: use `--species-a` and `--species-b` (or `--selection-a`/`--selection-b` for manual groups)
-```
-curdf --file structure.xyz --species-a C --species-b O --min 1 --max 8 --nbins 200 --device cuda
-```
-(`--species-b`/`--selection-b` automatically disables half-fill / pair doubling.)
-
-LAMMPS dump (lammpstrj) without a separate topology, via MDAnalysis:
-```
-curdf --file dump.lammpstrj --species-a C --species-b O --min 1 --max 8 --nbins 200
-```
-
+# CLI has been removed; use the Python API shown above.
 If the LAMMPS data file needs a specific atom_style, pass `--atom-style "id type x y z"` (default is the same).
