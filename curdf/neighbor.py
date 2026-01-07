@@ -9,7 +9,7 @@ def build_neighbor_list(
     cell: Tensor,
     pbc: Tensor,
     half_fill: bool = True,
-    max_neighbors: int = 2048,
+    max_neighbors: int | None = None,
     method: str = "cell_list",
 ):
     """

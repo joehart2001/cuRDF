@@ -49,8 +49,18 @@ import MDAnalysis as mda
 from curdf import rdf
 
 u = mda.Universe("topology.data", "traj.dcd", atom_style="id type x y z")
-bins, gr = rdf(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
+bins, gr = rdf(
+  u,
+  species_a="C",
+  species_b="O",
+  r_min=1.0,
+  r_max=8.0,
+)
 ```
+
+`cell_list` vs `naive` neighbor list methods:
+
+![cuRDF benchmark](benchmarks/results/results.png)
 
 ## Citation
 If you use cuRDF in your work, please cite:

@@ -3,7 +3,10 @@ from typing import Sequence
 
 import numpy as np
 from pathlib import Path
-from tqdm import tqdm
+from tqdm import tqdm, TqdmWarning
+import warnings
+
+warnings.filterwarnings("ignore", category=TqdmWarning)
 
 try:
     import MDAnalysis as mda
@@ -57,6 +60,11 @@ def rdf_from_mdanalysis(
     if torch_dtype is None:
         import torch
         torch_dtype = torch.float32
+    warnings.filterwarnings(
+        "ignore",
+        message="DCDReader currently makes independent timesteps",
+        category=DeprecationWarning,
+    )
 
     # Ensure atom names are present
     has_names = hasattr(universe.atoms, "names")

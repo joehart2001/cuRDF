@@ -17,7 +17,8 @@ def _update_counts(
     r_min: float,
     r_max: float,
     half_fill: bool,
-    max_neighbors: int,
+    max_neighbors: int | None,
+    method: str,
     group_a_mask: Tensor | None = None,
     group_b_mask: Tensor | None = None,
 ) -> float:
@@ -34,6 +35,7 @@ def _update_counts(
         pbc=pbc,
         half_fill=half_fill,
         max_neighbors=max_neighbors,
+        method=method,
     )
 
     src = nlist[0].to(torch.int64)
@@ -95,7 +97,8 @@ def compute_rdf(
     device: str | torch.device = "cuda",
     torch_dtype: torch.dtype = torch.float32,
     half_fill: bool = True,
-    max_neighbors: int = 2048,
+    max_neighbors: int | None = None,
+    method: str = "cell_list",
     group_a_indices=None,
     group_b_indices=None,
 ):
@@ -108,7 +111,8 @@ def compute_rdf(
         pbc: iterable of 3 booleans
         r_min/r_max/nbins: histogram parameters
         half_fill: True for identical species (unique pairs); False for ordered pairs
-        max_neighbors: passed to Toolkit-Ops neighbor list
+        max_neighbors: passed to Toolkit-Ops neighbor list (None for library default)
+        method: neighbor list method ("cell_list" or "naive")
         group_a_indices/group_b_indices: optional index lists for cross-species RDF.
             If provided, counts pairs with src in A and tgt in B. When both are None,
             uses all atoms (identical-species mode).
@@ -144,6 +148,7 @@ def compute_rdf(
         r_max=r_max,
         half_fill=half_fill,
         max_neighbors=max_neighbors,
+        method=method,
         group_a_mask=group_a_mask,
         group_b_mask=group_b_mask,
     )
@@ -205,10 +210,11 @@ def accumulate_rdf(
             r_min=r_min,
             r_max=r_max,
             half_fill=half_fill,
-            max_neighbors=max_neighbors,
-            group_a_mask=group_a_mask,
-            group_b_mask=group_b_mask,
-        )
+        max_neighbors=max_neighbors,
+        method=method,
+        group_a_mask=group_a_mask,
+        group_b_mask=group_b_mask,
+    )
         total_norm += norm
 
     centers, g_r = _finalize_gr(
