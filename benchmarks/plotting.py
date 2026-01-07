@@ -87,7 +87,7 @@ def plot_elapsed(csv_path: Path, plot_path: Path, n_frames: int):
         loc="upper center",
         ncol=3,
         bbox_to_anchor=(0.42, 0.95),
-        title="method",
+        title="Method",
     )
     device_legend = fig.legend(
         handles=[
