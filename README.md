@@ -5,6 +5,12 @@
 
 CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops) O(N) neighbor lists and PyTorch. Compatible with ASE Atoms or MDAnalysis Universe objects.
 
+## Benchmarking
+
+![cuRDF benchmark](benchmarks/results/results.png)
+
+cuRDF is benchmarked against RDF (MDAnalysis) and neighbour list implementations on CPU (AMD Ryzen 9 9950X, 32 threads) and GPU (NVIDIA RTX 5090).
+
 ## Install
 Latest release:
 ```
@@ -57,10 +63,6 @@ bins, gr = rdf(
   r_max=8.0,
 )
 ```
-
-`cell_list` vs `naive` neighbor list methods:
-
-![cuRDF benchmark](benchmarks/results/results.png)
 
 ## Citation
 If you use cuRDF in your work, please cite:
