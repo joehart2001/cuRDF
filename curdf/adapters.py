@@ -2,7 +2,6 @@ from collections.abc import Iterable
 from typing import Sequence
 
 import numpy as np
-from pathlib import Path
 from tqdm import tqdm, TqdmWarning
 import warnings
 
@@ -27,7 +26,17 @@ from .rdf import accumulate_rdf
 
 def _mdanalysis_cell_matrix(dimensions):
     """
-    MDAnalysis gives [a, b, c, alpha, beta, gamma]; convert to 3x3.
+    Convert MDAnalysis unit cell representation to a 3x3 matrix.
+
+    Parameters
+    ----------
+    dimensions
+        Array-like with ``[a, b, c, alpha, beta, gamma]`` in MDAnalysis format.
+
+    Returns
+    -------
+    np.ndarray
+        Cell matrix shaped ``(3, 3)``.
     """
     if triclinic_vectors is None:
         raise ImportError("MDAnalysis not available")
@@ -38,7 +47,6 @@ def rdf_from_mdanalysis(
     universe,
     species_a: str,
     species_b: str | None = None,
-    selection: str | None = None,
     selection_b: str | None = None,
     atom_types_map: dict | None = None,
     index=None,
@@ -53,8 +61,45 @@ def rdf_from_mdanalysis(
     method: str = "cell_list",
 ):
     """
-    Compute g(r) from an MDAnalysis Universe across all trajectory frames.
-    species_a/species_b: required element names for groups A/B. If species_b omitted, uses same-species.
+    Compute g(r) from an MDAnalysis Universe across trajectory frames.
+
+    Parameters
+    ----------
+    universe
+        MDAnalysis ``Universe`` containing topology and trajectory.
+    species_a
+        Element name for group A.
+    species_b
+        Optional element name for group B; defaults to group A.
+    selection_b
+        Optional selection string for group B; defaults to species-based selection.
+    atom_types_map
+        Optional mapping for numeric atom types to element names.
+    index
+        Optional trajectory index/selector.
+    r_min
+        Minimum distance included in the histogram.
+    r_max
+        Maximum distance included in the histogram.
+    nbins
+        Number of histogram bins.
+    device
+        Torch device string or object used for computation.
+    torch_dtype
+        Torch dtype used for tensors.
+    half_fill
+        ``True`` for identical-species mode (unique pairs), ``False`` for ordered pairs.
+    max_neighbors
+        Optional neighbor-list cap forwarded to Toolkit-Ops.
+    wrap_positions
+        Whether to wrap positions into the unit cell before counting.
+    method
+        Neighbor-list method name (e.g., ``"cell_list"`` or ``"naive"``).
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Bin centers and g(r) arrays on CPU.
     """
     if mda is None:
         raise ImportError("MDAnalysis must be installed for rdf_from_mdanalysis")
@@ -151,6 +196,21 @@ def rdf_from_mdanalysis(
 
 
 def _extract_selection_indices(selection: Sequence[int] | None, n_atoms: int):
+    """
+    Normalize an index selection to a 1D numpy array.
+
+    Parameters
+    ----------
+    selection
+        Optional sequence of indices.
+    n_atoms
+        Total atom count used for bounds checking.
+
+    Returns
+    -------
+    np.ndarray
+        Validated index array.
+    """
     if selection is None:
         return np.arange(n_atoms)
     idx = np.asarray(selection, dtype=int)
@@ -159,89 +219,6 @@ def _extract_selection_indices(selection: Sequence[int] | None, n_atoms: int):
     if idx.min(initial=0) < 0 or idx.max(initial=0) >= n_atoms:
         raise ValueError("selection indices out of bounds")
     return idx
-
-
-def rdf(
-    obj,
-    species_a: str,
-    species_b: str | None = None,
-    index=None,
-    atom_types_map: dict | None = None,
-    method: str = "cell_list",
-    outdir=None,
-    output: str | None = None,
-    **kwargs,
-):
-    """
-    Unified entry point:
-      - ASE: pass an Atoms or iterable of Atoms
-      - MDAnalysis: pass a Universe
-
-    Additional kwargs are forwarded to rdf_from_ase or rdf_from_mdanalysis.
-    If output is provided, saves bins/gr to that path (npz). If outdir is provided, saves to outdir/rdf.npz.
-    """
-    # Lazy imports to avoid hard deps
-    if hasattr(obj, "get_positions"):  # ASE Atoms
-        bins, gr = rdf_from_ase(
-            obj,
-            species_a=species_a,
-            species_b=species_b,
-            index=index,
-            atom_types_map=atom_types_map,
-            method=method,
-            **kwargs,
-        )
-        _maybe_save(outdir, output, bins, gr)
-        return bins, gr
-    # MDAnalysis Universe duck check
-    if hasattr(obj, "trajectory") and hasattr(obj, "select_atoms"):
-        bins, gr = rdf_from_mdanalysis(
-            obj,
-            species_a=species_a,
-            species_b=species_b,
-            index=index,
-            atom_types_map=atom_types_map,
-            method=method,
-            **kwargs,
-        )
-        _maybe_save(outdir, output, bins, gr)
-        return bins, gr
-    raise TypeError("rdf() expects an ASE Atoms/trajectory or an MDAnalysis Universe")
-
-
-def _maybe_save(outdir, output, bins, gr):
-    target = None
-    if output:
-        target = Path(output)
-        target.parent.mkdir(parents=True, exist_ok=True)
-    elif outdir:
-        path = Path(outdir)
-        path.mkdir(parents=True, exist_ok=True)
-        target = path / "rdf.npz"
-    else:
-        return
-
-    suffix = target.suffix.lower()
-    if suffix == ".npz":
-        np.savez(target, bins=bins, gr=gr)
-    elif suffix in {".csv", ".tsv"}:
-        sep = "," if suffix == ".csv" else "\t"
-        import pandas as pd
-
-        df = pd.DataFrame({"r": bins, "g_r": gr})
-        df.to_csv(target, sep=sep, index=False)
-    elif suffix in {".json"}:
-        import json
-
-        with open(target, "w") as f:
-            json.dump({"bins": bins.tolist(), "g_r": gr.tolist()}, f)
-    elif suffix in {".pkl", ".pickle"}:
-        import pickle
-
-        with open(target, "wb") as f:
-            pickle.dump({"bins": bins, "g_r": gr}, f, protocol=pickle.HIGHEST_PROTOCOL)
-    else:
-        np.savez(target, bins=bins, gr=gr)
 
 
 def rdf_from_ase(
@@ -259,14 +236,51 @@ def rdf_from_ase(
     torch_dtype=None,
     half_fill: bool = True,
     max_neighbors: int = 2048,
+    method: str = "cell_list",
     wrap_positions: bool = True,
 ):
     """
-    Compute g(r) from an ASE Atoms or iterable of Atoms (trajectory).
-    
-    selection/selection_b: index lists for group A and group B (cross-species).
-    species_a/species_b: element symbols for group A/B (if provided, override selection indices).
-    With only one group provided, computes same-species RDF.
+    Compute g(r) from an ASE ``Atoms`` or iterable of ``Atoms``.
+
+    Parameters
+    ----------
+    atoms_or_trajectory
+        ASE ``Atoms`` or iterable of ``Atoms`` frames.
+    selection
+        Optional indices for group A.
+    selection_b
+        Optional indices for group B; defaults to selection.
+    species_a
+        Optional element name for group A; overrides selections.
+    species_b
+        Optional element name for group B; overrides selections.
+    index
+        Optional trajectory slice/index.
+    atom_types_map
+        Optional mapping for numeric atom types to element names.
+    r_min
+        Minimum distance included in the histogram.
+    r_max
+        Maximum distance included in the histogram.
+    nbins
+        Number of histogram bins.
+    device
+        Torch device string or object used for computation.
+    torch_dtype
+        Torch dtype used for tensors.
+    half_fill
+        ``True`` for identical-species mode (unique pairs), ``False`` for ordered pairs.
+    max_neighbors
+        Optional neighbor-list cap forwarded to Toolkit-Ops.
+    method
+        Neighbor-list method name (e.g., ``"cell_list"`` or ``"naive"``).
+    wrap_positions
+        Whether to wrap positions into the unit cell before counting.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Bin centers and g(r) arrays on CPU.
     """
     if Atoms is None:
         raise ImportError("ASE must be installed for rdf_from_ase")
@@ -353,4 +367,5 @@ def rdf_from_ase(
         torch_dtype=torch_dtype,
         half_fill=half_fill,
         max_neighbors=max_neighbors,
+        method=method,
     )

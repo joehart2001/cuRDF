@@ -1,6 +1,8 @@
 import math
+from pathlib import Path
 from typing import Iterable
 
+import numpy as np
 import torch
 from torch import Tensor
 
@@ -24,7 +26,38 @@ def _update_counts(
 ) -> float:
     """
     Accumulate pair counts for one frame.
-    Returns normalization factor (n_group_a * rho_group_b) so the caller can normalize after multiple frames.
+
+    Parameters
+    ----------
+    counts
+        Histogram tensor updated in place.
+    positions
+        Cartesian coordinates shaped ``(N, 3)``.
+    cell
+        Cell tensor shaped ``(1, 3, 3)``.
+    pbc
+        Periodic boundary flags tensor shaped ``(1, 3)``.
+    edges
+        Histogram bin edges tensor shaped ``(nbins + 1,)``.
+    r_min
+        Minimum distance included in the histogram.
+    r_max
+        Maximum distance included in the histogram.
+    half_fill
+        Whether to build unique pairs (same-species mode).
+    max_neighbors
+        Optional neighbor-list cap forwarded to Toolkit-Ops.
+    method
+        Neighbor-list method name passed to Toolkit-Ops.
+    group_a_mask
+        Optional boolean mask selecting source atoms.
+    group_b_mask
+        Optional boolean mask selecting target atoms.
+
+    Returns
+    -------
+    float
+        Normalization factor ``n_group_a * rho_group_b`` so callers can combine frames.
     """
     dr = (r_max - r_min) / (len(edges) - 1)
 
@@ -74,6 +107,27 @@ def _finalize_gr(
     half_fill: bool,
     cross_mode: bool,
 ) -> tuple[Tensor, Tensor]:
+    """
+    Convert accumulated counts into g(r).
+
+    Parameters
+    ----------
+    counts
+        Histogram counts tensor.
+    edges
+        Bin edges tensor shaped ``(nbins + 1,)``.
+    total_norm
+        Accumulated normalization factor from frames.
+    half_fill
+        Whether pairs were unique (affects pair factor).
+    cross_mode
+        Whether cross-species mode was used (affects pair factor).
+
+    Returns
+    -------
+    tuple[Tensor, Tensor]
+        Bin centers tensor and g(r) tensor.
+    """
     r1 = edges[:-1]
     r2 = edges[1:]
     shell_vol = (4.0 / 3.0) * math.pi * (r2**3 - r1**3)
@@ -105,17 +159,39 @@ def compute_rdf(
     """
     Compute g(r) for a single frame of positions.
 
-    Args:
-        positions: array-like (N,3)
-        cell: (3,3) cell matrix (triclinic allowed)
-        pbc: iterable of 3 booleans
-        r_min/r_max/nbins: histogram parameters
-        half_fill: True for identical species (unique pairs); False for ordered pairs
-        max_neighbors: passed to Toolkit-Ops neighbor list (None for library default)
-        method: neighbor list method ("cell_list" or "naive")
-        group_a_indices/group_b_indices: optional index lists for cross-species RDF.
-            If provided, counts pairs with src in A and tgt in B. When both are None,
-            uses all atoms (identical-species mode).
+    Parameters
+    ----------
+    positions
+        Array-like Cartesian coordinates shaped ``(N, 3)``.
+    cell
+        Cell matrix shaped ``(3, 3)`` (triclinic allowed).
+    pbc
+        Iterable of three booleans for periodicity along each axis.
+    r_min
+        Minimum distance included in the histogram.
+    r_max
+        Maximum distance included in the histogram.
+    nbins
+        Number of histogram bins.
+    device
+        Torch device string or object used for computation.
+    torch_dtype
+        Torch dtype used for tensors.
+    half_fill
+        ``True`` for identical-species mode (unique pairs), ``False`` for ordered pairs.
+    max_neighbors
+        Optional neighbor-list cap forwarded to Toolkit-Ops.
+    method
+        Neighbor-list method name (e.g., ``"cell_list"`` or ``"naive"``).
+    group_a_indices
+        Optional indices for group A (cross-species mode).
+    group_b_indices
+        Optional indices for group B (cross-species mode); defaults to group A when omitted.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Bin centers and g(r) arrays on CPU.
     """
     device = torch.device(device)
     pos_t = torch.as_tensor(positions, device=device, dtype=torch_dtype)
@@ -175,8 +251,33 @@ def accumulate_rdf(
     method: str = "cell_list",
 ):
     """
-    General accumulator for multiple frames.
-    frames: iterable yielding dicts with keys positions, cell, pbc, and optional group_a_mask/group_b_mask
+    Accumulate g(r) over multiple frames.
+
+    Parameters
+    ----------
+    frames
+        Iterable yielding dicts with keys ``positions``, ``cell``, ``pbc``, and optional ``group_a_mask``/``group_b_mask``.
+    r_min
+        Minimum distance included in the histogram.
+    r_max
+        Maximum distance included in the histogram.
+    nbins
+        Number of histogram bins.
+    device
+        Torch device string or object used for computation.
+    torch_dtype
+        Torch dtype used for tensors.
+    half_fill
+        ``True`` for identical-species mode (unique pairs), ``False`` for ordered pairs.
+    max_neighbors
+        Optional neighbor-list cap forwarded to Toolkit-Ops.
+    method
+        Neighbor-list method name (e.g., ``"cell_list"`` or ``"naive"``).
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Bin centers and g(r) arrays on CPU.
     """
     device = torch.device(device)
     edges = torch.linspace(r_min, r_max, nbins + 1, device=device, dtype=torch_dtype)
@@ -226,3 +327,123 @@ def accumulate_rdf(
         cross_mode=cross_flag,
     )
     return centers.cpu().numpy(), g_r.cpu().numpy()
+
+
+def rdf(
+    obj,
+    species_a: str,
+    species_b: str | None = None,
+    index=None,
+    atom_types_map: dict | None = None,
+    method: str = "cell_list",
+    outdir=None,
+    output: str | None = None,
+    **kwargs,
+):
+    """
+    Unified user entry point for g(r) computation.
+
+    Parameters
+    ----------
+    obj
+        ASE ``Atoms`` or iterable of ``Atoms``; or MDAnalysis ``Universe``.
+    species_a
+        Element name for group A.
+    species_b
+        Optional element name for group B (defaults to group A).
+    index
+        Optional index/selector forwarded to source-specific readers.
+    atom_types_map
+        Optional mapping for numeric atom types to element names.
+    method
+        Neighbor-list method name (e.g., ``"cell_list"`` or ``"naive"``).
+    outdir
+        Optional directory to save ``rdf.npz``.
+    output
+        Optional explicit output path (``.npz``, ``.csv``, ``.json``, ``.pkl``).
+    **kwargs
+        Additional parameters forwarded to source-specific readers.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Bin centers and g(r) arrays on CPU.
+    """
+    # Lazy imports to avoid hard deps
+    from .adapters import rdf_from_ase, rdf_from_mdanalysis
+
+    if hasattr(obj, "get_positions"):  # ASE Atoms
+        bins, gr = rdf_from_ase(
+            obj,
+            species_a=species_a,
+            species_b=species_b,
+            index=index,
+            atom_types_map=atom_types_map,
+            method=method,
+            **kwargs,
+        )
+        _maybe_save(outdir, output, bins, gr)
+        return bins, gr
+    # MDAnalysis Universe duck check
+    if hasattr(obj, "trajectory") and hasattr(obj, "select_atoms"):
+        bins, gr = rdf_from_mdanalysis(
+            obj,
+            species_a=species_a,
+            species_b=species_b,
+            index=index,
+            atom_types_map=atom_types_map,
+            method=method,
+            **kwargs,
+        )
+        _maybe_save(outdir, output, bins, gr)
+        return bins, gr
+    raise TypeError("rdf() expects an ASE Atoms/trajectory or an MDAnalysis Universe")
+
+
+def _maybe_save(outdir, output, bins, gr):
+    """
+    Persist RDF results to disk when requested.
+
+    Parameters
+    ----------
+    outdir
+        Optional output directory; saves ``rdf.npz`` when provided.
+    output
+        Optional explicit output path.
+    bins
+        Bin centers array.
+    gr
+        g(r) array matching ``bins``.
+    """
+    target = None
+    if output:
+        target = Path(output)
+        target.parent.mkdir(parents=True, exist_ok=True)
+    elif outdir:
+        path = Path(outdir)
+        path.mkdir(parents=True, exist_ok=True)
+        target = path / "rdf.npz"
+    else:
+        return
+
+    suffix = target.suffix.lower()
+    if suffix == ".npz":
+        np.savez(target, bins=bins, gr=gr)
+    elif suffix in {".csv", ".tsv"}:
+        sep = "," if suffix == ".csv" else "\t"
+        import pandas as pd
+
+        df = pd.DataFrame({"r": bins, "g_r": gr})
+        df.to_csv(target, sep=sep, index=False)
+    elif suffix in {".json"}:
+        import json
+
+        with open(target, "w") as f:
+            json.dump({"bins": bins.tolist(), "g_r": gr.tolist()}, f)
+    elif suffix in {".pkl", ".pickle"}:
+        import pickle
+
+        with open(target, "wb") as f:
+            pickle.dump({"bins": bins, "g_r": gr}, f, protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+        np.savez(target, bins=bins, gr=gr)
