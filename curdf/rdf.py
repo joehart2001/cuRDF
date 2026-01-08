@@ -1,4 +1,5 @@
 import math
+from collections.abc import Iterable as CollIterable
 from pathlib import Path
 from typing import Iterable
 
@@ -346,7 +347,7 @@ def rdf(
     Parameters
     ----------
     obj
-        ASE ``Atoms`` or iterable of ``Atoms``; or MDAnalysis ``Universe``.
+        ASE ``Atoms``, iterable of ``Atoms`` (e.g., a list trajectory), or MDAnalysis ``Universe``.
     species_a
         Element name for group A.
     species_b
@@ -373,6 +374,18 @@ def rdf(
     from .adapters import rdf_from_ase, rdf_from_mdanalysis
 
     if hasattr(obj, "get_positions"):  # ASE Atoms
+        bins, gr = rdf_from_ase(
+            obj,
+            species_a=species_a,
+            species_b=species_b,
+            index=index,
+            atom_types_map=atom_types_map,
+            method=method,
+            **kwargs,
+        )
+        _maybe_save(outdir, output, bins, gr)
+        return bins, gr
+    if isinstance(obj, CollIterable) and all(hasattr(f, "get_positions") for f in obj):
         bins, gr = rdf_from_ase(
             obj,
             species_a=species_a,

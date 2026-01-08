@@ -74,7 +74,7 @@ def rdf_from_mdanalysis(
     selection_b
         Optional selection string for group B; defaults to species-based selection.
     atom_types_map
-        Optional mapping for numeric atom types to element names.
+        Optional mapping for numeric atom types to element names (e.g., ``{1: "C", 2: "H"}``).
     index
         Optional trajectory index/selector.
     r_min
@@ -139,7 +139,9 @@ def rdf_from_mdanalysis(
         elif species_b is None or species_b == species_a:
             universe.add_TopologyAttr("name", [species_a] * len(universe.atoms))
         else:
-            raise ValueError("Topology lacks atom names; provide --atom-types mapping for cross-species selections.")
+            raise ValueError(
+                "Topology lacks atom names; pass atom_types_map to rdf() for cross-species selections (e.g., atom_types_map = {1: 'C', 2: 'H'})."
+            )
 
     ag_a = universe.select_atoms(f"name {species_a}")
     ag_b = universe.select_atoms(f"name {species_b}") if species_b is not None else ag_a
@@ -257,7 +259,7 @@ def rdf_from_ase(
     index
         Optional trajectory slice/index.
     atom_types_map
-        Optional mapping for numeric atom types to element names.
+        Optional mapping for numeric atom types to element names (e.g., ``{1: "C", 2: "H"}``).
     r_min
         Minimum distance included in the histogram.
     r_max
@@ -328,9 +330,15 @@ def rdf_from_ase(
                 idx_b = idx_a
 
             if len(idx_a) == 0:
-                raise ValueError(f"No atoms found for species/selection A ({species_a or selection})")
+                raise ValueError(
+                    f'No atoms found for species/selection A ("{species_a}" or {selection}). '
+                    "Check element symbols or index selection."
+                )
             if len(idx_b) == 0:
-                raise ValueError(f"No atoms found for species/selection B ({species_b or selection_b or selection})")
+                raise ValueError(
+                    f'No atoms found for species/selection B ("{species_b}" or {selection_b or selection}). '
+                    "Check element symbols or index selection."
+                )
 
             pos_all = frame.get_positions(wrap=wrap_positions)
             pos_a = pos_all[idx_a]

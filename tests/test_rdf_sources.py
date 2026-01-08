@@ -64,3 +64,30 @@ def test_rdf_with_mdanalysis_input_cross_species_forwards_method(stub_neighbor):
     assert stub_neighbor
     assert stub_neighbor[0]["method"] == "naive"
     assert stub_neighbor[0]["half_fill"] is False
+
+
+def test_rdf_accepts_list_of_ase_atoms(stub_neighbor):
+    ase = pytest.importorskip("ase")
+    from ase import Atoms
+
+    frame = Atoms(
+        symbols=["H", "H"],
+        positions=[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
+        cell=[6.0, 6.0, 6.0],
+        pbc=True,
+    )
+    traj = [frame, frame.copy()]
+    unified_rdf(
+        traj,
+        species_a="H",
+        r_min=0.0,
+        r_max=3.0,
+        nbins=3,
+        device="cpu",
+        torch_dtype=torch.float32,
+        half_fill=True,
+        max_neighbors=64,
+        method="naive",
+    )
+    assert len(stub_neighbor) == len(traj)
+    assert all(call["method"] == "naive" for call in stub_neighbor)
