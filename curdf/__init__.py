@@ -2,8 +2,7 @@
 cuRDF: GPU-accelerated radial distribution functions with MDAnalysis/ASE adapters.
 """
 
-from .rdf import compute_rdf
-from .adapters import rdf
+from .rdf import compute_rdf, rdf
 from .plotting import plot_rdf
 
 __all__ = [

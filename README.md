@@ -9,7 +9,7 @@ CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops
 
 ![cuRDF benchmark](benchmarks/results/results.png)
 
-cuRDF is benchmarked against RDF (MDAnalysis) and neighbour list implementations on CPU (AMD Ryzen 9 9950X, 32 threads) and GPU (NVIDIA RTX 5090).
+cuRDF is benchmarked against RDF (MDAnalysis) and neighbour list implementations on CPU (AMD Ryzen 9 9950X, 32 threads) and GPU (NVIDIA RTX 5090) for systems of varying sizes at a density of 0.05 atoms/Å³ over 1000 frames.
 
 ## Install
 Latest release:
@@ -40,7 +40,8 @@ bins, gr = rdf(
   r_min=1.0,
   r_max=8.0,
   nbins=200, # resolution of rdf histogram binning
-  output = "results/rdf.csv"
+  method="cell_list", # neighbor list method: "cell_list" (larger systems) or "naive" (smaller systems, less overhead)
+  output = "results/rdf.csv" # optional output
 )
 
 # Plot RDF
