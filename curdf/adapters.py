@@ -50,6 +50,7 @@ def rdf_from_mdanalysis(
     half_fill: bool = True,
     max_neighbors: int = 2048,
     wrap_positions: bool = True,
+    method: str = "cell_list",
 ):
     """
     Compute g(r) from an MDAnalysis Universe across all trajectory frames.
@@ -145,6 +146,7 @@ def rdf_from_mdanalysis(
         torch_dtype=torch_dtype,
         half_fill=half_fill,
         max_neighbors=max_neighbors,
+        method=method,
     )
 
 
@@ -165,6 +167,7 @@ def rdf(
     species_b: str | None = None,
     index=None,
     atom_types_map: dict | None = None,
+    method: str = "cell_list",
     outdir=None,
     output: str | None = None,
     **kwargs,
@@ -185,6 +188,7 @@ def rdf(
             species_b=species_b,
             index=index,
             atom_types_map=atom_types_map,
+            method=method,
             **kwargs,
         )
         _maybe_save(outdir, output, bins, gr)
@@ -197,6 +201,7 @@ def rdf(
             species_b=species_b,
             index=index,
             atom_types_map=atom_types_map,
+            method=method,
             **kwargs,
         )
         _maybe_save(outdir, output, bins, gr)

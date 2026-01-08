@@ -4,9 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cuRDF"
-version = "0.2.0"
-readme = { file = "README.md", content-type = "text/markdown" }
+version = "0.3.0"
+description = "GPU-accelerated radial distribution functions with NVIDIA ALCHEMI Toolkit-Ops neighbor lists and PyTorch."
+authors = [{ name = "Joseph Hart" }]
+readme = { file = "README.md", "content-type" = "text/markdown" }
 requires-python = ">=3.10"
+license = "MIT"
 dependencies = [
   "numpy",
   "torch>=2.8.0",
@@ -15,6 +18,37 @@ dependencies = [
   "ase",
   "matplotlib",
 ]
+keywords = ["rdf", "radial distribution function", "cuda", "gpu", "pytorch", "neighbor list", "molecular dynamics", "ase", "mdanalysis"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Chemistry",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Distributed Computing",
+  "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/joehart2001/cuRDF"
+Repository = "https://github.com/joehart2001/cuRDF"
+Issues = "https://github.com/joehart2001/cuRDF/issues"
+Documentation = "https://github.com/joehart2001/cuRDF#readme"
+DOI = "https://doi.org/10.5281/zenodo.1085332119"
+
+[tool.setuptools]
+packages = ["curdf"]
 
 [project.optional-dependencies]
 dev = ["pytest"]

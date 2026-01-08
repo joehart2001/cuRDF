@@ -172,6 +172,7 @@ def accumulate_rdf(
     torch_dtype: torch.dtype,
     half_fill: bool,
     max_neighbors: int,
+    method: str = "cell_list",
 ):
     """
     General accumulator for multiple frames.
@@ -210,11 +211,11 @@ def accumulate_rdf(
             r_min=r_min,
             r_max=r_max,
             half_fill=half_fill,
-        max_neighbors=max_neighbors,
-        method=method,
-        group_a_mask=group_a_mask,
-        group_b_mask=group_b_mask,
-    )
+            max_neighbors=max_neighbors,
+            method=method,
+            group_a_mask=group_a_mask,
+            group_b_mask=group_b_mask,
+        )
         total_norm += norm
 
     centers, g_r = _finalize_gr(
