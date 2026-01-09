@@ -10,6 +10,7 @@ CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops
 ![cuRDF benchmark](benchmarks/results/results.png)
 
 cuRDF is benchmarked against other RDF (MDAnalysis) and neighbour list implementations on CPU (AMD Ryzen 9 9950X, 32 threads) and GPU (NVIDIA RTX 5090) for systems of varying sizes at a density of 0.05 atoms/Å³ over 1000 frames.
+Benchmarks use random positions in cubic cells sized to maintain a fixed number density (orthorhombic boxes, periodic in all directions).
 
 ## Install
 Latest release:
