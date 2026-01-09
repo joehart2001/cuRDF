@@ -2,6 +2,8 @@ import csv
 from pathlib import Path
 import argparse
 
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend to avoid GUI hangs
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
@@ -66,7 +68,8 @@ def plot_elapsed(csv_path: Path, plot_path: Path, n_frames: int):
         label = method
 
         line_full = ax_full.plot(n_atoms, elapsed, marker=marker, linestyle=linestyle, color=color, label=label)[0]
-        series_handles[label] = line_full
+        # Legend handle: solid line only to show color by method (device shown separately).
+        series_handles[label] = Line2D([], [], color=color, linestyle="-", label=label)
 
         n_zoom = [n for n in n_atoms if n <= 1000]
         e_zoom = [e for n, e in zip(n_atoms, elapsed) if n <= 1000]
@@ -104,6 +107,7 @@ def plot_elapsed(csv_path: Path, plot_path: Path, n_frames: int):
     fig.add_artist(device_legend)
     fig.tight_layout(rect=(0, 0, 1, 0.8))
     fig.savefig(plot_path, bbox_inches="tight")
+    plt.close(fig)
     print(f"Saved combined plot to {plot_path}")
 
 

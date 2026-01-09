@@ -79,7 +79,7 @@ If you use cuRDF in your work, please cite:
   month     = dec,
   year      = 2025,
   publisher = {Zenodo},
-  version   = {0.1.0},
+  version   = {0.5.0},
   doi       = {10.5281/zenodo.1085332119},
   url       = {https://doi.org/10.5281/zenodo.1085332119}
 }
