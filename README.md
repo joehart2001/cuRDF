@@ -1,5 +1,7 @@
 ![cuRDF logo](logo.svg)
 
+---
+
 [![DOI](https://zenodo.org/badge/1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/)
 
 
