@@ -70,7 +70,12 @@ bins, gr = rdf(
 
 If the topology lacks atom names (only numeric types), supply a mapping:
 ```python
-bins, gr = rdf(u, species_a="C", species_b="O", atom_types_map={1: "C", 2: "H"})
+bins, gr = rdf(
+  u, 
+  species_a="C", 
+  species_b="O", 
+  atom_types_map={1: "C", 2: "H"}
+)
 ```
 
 ## Citation
