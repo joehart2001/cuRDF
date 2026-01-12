@@ -13,8 +13,6 @@
     </filter>
   </defs>
   
-  <rect width="400" height="120" rx="10" fill="#1a1a1a"/>
-
   <path d="M 20,90 L 40,90 Q 50,90 55,50 Q 60,10 65,50 Q 70,90 85,80 Q 100,70 115,70 L 135,70" 
         stroke="url(#grad1)" stroke-width="4" fill="none" filter="url(#glow)" stroke-linecap="round" />
   
