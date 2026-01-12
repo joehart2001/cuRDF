@@ -13,12 +13,12 @@
     </filter>
   </defs>
   
+  <rect width="100%" height="100%" fill="#1a1a1a" />
+  
   <path d="M 20,90 L 40,90 Q 50,90 55,50 Q 60,10 65,50 Q 70,90 85,80 Q 100,70 115,70 L 135,70" 
         stroke="url(#grad1)" stroke-width="4" fill="none" filter="url(#glow)" stroke-linecap="round" />
   
   <text x="145" y="75" font-family="Arial, sans-serif" font-weight="900" font-size="42" fill="#00ff88">cu</text>
-  
   <text x="195" y="75" font-family="Arial, sans-serif" font-weight="900" font-size="42" fill="#ffffff">RDF</text>
-  
   <text x="148" y="95" font-family="Arial, sans-serif" font-size="12" fill="#888888" letter-spacing="1">GPU-ACCELERATED ANALYSIS</text>
 </svg>
