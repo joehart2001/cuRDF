@@ -10,6 +10,8 @@ from torch import Tensor
 from .cell import cell_tensor, cell_volume, pbc_tensor
 from .neighbor import build_neighbor_list
 
+DEFAULT_R_MIN_FLOOR = 1e-6
+
 
 def _update_counts(
     counts: Tensor,
@@ -22,6 +24,7 @@ def _update_counts(
     half_fill: bool,
     max_neighbors: int | None,
     method: str,
+    r_min_floor: float = DEFAULT_R_MIN_FLOOR,
     group_a_mask: Tensor | None = None,
     group_b_mask: Tensor | None = None,
 ) -> float:
@@ -44,6 +47,8 @@ def _update_counts(
         Minimum distance included in the histogram.
     r_max
         Maximum distance included in the histogram.
+    r_min_floor
+        Small lower bound to exclude pathological self/near-zero distances when ``r_min`` is zero.
     half_fill
         Whether to build unique pairs (same-species mode).
     max_neighbors
@@ -79,7 +84,10 @@ def _update_counts(
     dr_vec = (positions[tgt] + shift_cart) - positions[src]
     dist = torch.linalg.norm(dr_vec, dim=1)
 
-    valid = (dist >= r_min) & (dist < r_max)
+    r_min_eff = max(r_min, r_min_floor)
+    valid = (dist >= r_min_eff) & (dist < r_max)
+    # Drop any self-pairs that may appear in the neighbor list (important when r_min == 0).
+    valid = valid & (src != tgt)
     if group_a_mask is not None and group_b_mask is not None:
         src_mask = group_a_mask[src]
         tgt_mask = group_b_mask[tgt]
@@ -149,6 +157,7 @@ def compute_rdf(
     r_min: float = 1.0,
     r_max: float = 6.0,
     nbins: int = 100,
+    r_min_floor: float = DEFAULT_R_MIN_FLOOR,
     device: str | torch.device = "cuda",
     torch_dtype: torch.dtype = torch.float32,
     half_fill: bool = True,
@@ -174,6 +183,8 @@ def compute_rdf(
         Maximum distance included in the histogram.
     nbins
         Number of histogram bins.
+    r_min_floor
+        Small lower bound to exclude pathological self/near-zero distances when ``r_min`` is zero.
     device
         Torch device string or object used for computation.
     torch_dtype
@@ -202,7 +213,8 @@ def compute_rdf(
     cell_t = cell_tensor(cell, device=device, dtype=torch_dtype)
     pbc_t = pbc_tensor(pbc, device=device)
 
-    edges = torch.linspace(r_min, r_max, nbins + 1, device=device, dtype=torch_dtype)
+    r_min_eff = max(r_min, r_min_floor)
+    edges = torch.linspace(r_min_eff, r_max, nbins + 1, device=device, dtype=torch_dtype)
     counts = torch.zeros(nbins, device=device, dtype=torch.int64)
 
     group_a_mask = group_b_mask = None
@@ -221,11 +233,12 @@ def compute_rdf(
         cell=cell_t,
         pbc=pbc_t,
         edges=edges,
-        r_min=r_min,
+        r_min=r_min_eff,
         r_max=r_max,
         half_fill=half_fill,
         max_neighbors=max_neighbors,
         method=method,
+        r_min_floor=r_min_floor,
         group_a_mask=group_a_mask,
         group_b_mask=group_b_mask,
     )
@@ -245,6 +258,7 @@ def accumulate_rdf(
     r_min: float,
     r_max: float,
     nbins: int,
+    r_min_floor: float,
     device: str | torch.device,
     torch_dtype: torch.dtype,
     half_fill: bool,
@@ -264,6 +278,8 @@ def accumulate_rdf(
         Maximum distance included in the histogram.
     nbins
         Number of histogram bins.
+    r_min_floor
+        Small lower bound to exclude pathological self/near-zero distances when ``r_min`` is zero.
     device
         Torch device string or object used for computation.
     torch_dtype
@@ -281,7 +297,8 @@ def accumulate_rdf(
         Bin centers and g(r) arrays on CPU.
     """
     device = torch.device(device)
-    edges = torch.linspace(r_min, r_max, nbins + 1, device=device, dtype=torch_dtype)
+    r_min_eff = max(r_min, r_min_floor)
+    edges = torch.linspace(r_min_eff, r_max, nbins + 1, device=device, dtype=torch_dtype)
     counts = torch.zeros(nbins, device=device, dtype=torch.int64)
     total_norm = 0.0
 
@@ -310,11 +327,12 @@ def accumulate_rdf(
             cell=cell_t,
             pbc=pbc_t,
             edges=edges,
-            r_min=r_min,
+            r_min=r_min_eff,
             r_max=r_max,
             half_fill=half_fill,
             max_neighbors=max_neighbors,
             method=method,
+            r_min_floor=r_min_floor,
             group_a_mask=group_a_mask,
             group_b_mask=group_b_mask,
         )

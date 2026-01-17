@@ -50,9 +50,13 @@ def rdf_from_mdanalysis(
     selection_b: str | None = None,
     atom_types_map: dict | None = None,
     index=None,
+    start: int | None = None,
+    stop: int | None = None,
+    step: int | None = None,
     r_min: float = 1.0,
     r_max: float = 6.0,
     nbins: int = 100,
+    r_min_floor: float = 1e-6,
     device="cuda",
     torch_dtype=None,
     half_fill: bool = True,
@@ -77,12 +81,20 @@ def rdf_from_mdanalysis(
         Optional mapping for numeric atom types to element names (e.g., ``{1: "C", 2: "H"}``).
     index
         Optional trajectory index/selector.
+    start
+        Optional starting frame (inclusive) when iterating the trajectory.
+    stop
+        Optional stopping frame (exclusive) when iterating the trajectory.
+    step
+        Optional frame stride when iterating the trajectory.
     r_min
         Minimum distance included in the histogram.
     r_max
         Maximum distance included in the histogram.
     nbins
         Number of histogram bins.
+    r_min_floor
+        Small lower bound to exclude pathological self/near-zero distances when ``r_min`` is zero.
     device
         Torch device string or object used for computation.
     torch_dtype
@@ -156,7 +168,12 @@ def rdf_from_mdanalysis(
     same_species = len(ag_a) == len(ag_b) and ag_a is ag_b
 
     def frames():
-        traj = universe.trajectory[index] if index is not None else universe.trajectory
+        if index is not None:
+            traj = universe.trajectory[index]
+        elif start is not None or stop is not None or step is not None:
+            traj = universe.trajectory[start:stop:step]
+        else:
+            traj = universe.trajectory
         for ts in tqdm(traj, desc="Frames (MDAnalysis)", unit="frame"):
             cell = _mdanalysis_cell_matrix(ts.dimensions)
             if same_species:
@@ -189,6 +206,7 @@ def rdf_from_mdanalysis(
         r_min=r_min,
         r_max=r_max,
         nbins=nbins,
+        r_min_floor=r_min_floor,
         device=device,
         torch_dtype=torch_dtype,
         half_fill=half_fill,
@@ -234,6 +252,7 @@ def rdf_from_ase(
     r_min: float = 1.0,
     r_max: float = 6.0,
     nbins: int = 100,
+    r_min_floor: float = 1e-6,
     device="cuda",
     torch_dtype=None,
     half_fill: bool = True,
@@ -266,6 +285,8 @@ def rdf_from_ase(
         Maximum distance included in the histogram.
     nbins
         Number of histogram bins.
+    r_min_floor
+        Small lower bound to exclude pathological self/near-zero distances when ``r_min`` is zero.
     device
         Torch device string or object used for computation.
     torch_dtype
@@ -371,6 +392,7 @@ def rdf_from_ase(
         r_min=r_min,
         r_max=r_max,
         nbins=nbins,
+        r_min_floor=r_min_floor,
         device=device,
         torch_dtype=torch_dtype,
         half_fill=half_fill,
