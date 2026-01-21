@@ -26,18 +26,6 @@ cd curdf
 pip install -e .
 ```
 
-## Validation
-
-RDFs for liquid water (64 atoms, 1 ns) match reference curves for all pairs (cite Darren paper):
-
-<table>
-  <tr>
-    <td><img src="tests/cuRDF_results/rdf_OO_comparison.svg" alt="O–O RDF" width="250"></td>
-    <td><img src="tests/cuRDF_results/rdf_HH_comparison.svg" alt="H–H RDF" width="250"></td>
-    <td><img src="tests/cuRDF_results/rdf_OH_comparison.svg" alt="O–H RDF" width="250"></td>
-  </tr>
-</table>
-
 ## Quickstart
 ASE Atoms object:
 ```python
@@ -89,6 +77,19 @@ bins, gr = rdf(
   atom_types_map={1: "C", 2: "H"}
 )
 ```
+
+## Validation
+
+RDFs for liquid water (64 atoms, 1 ns) match reference curves for all pairs (cite Darren paper):
+
+<table>
+  <tr>
+    <td><img src="tests/cuRDF_results/rdf_OO_comparison.svg" alt="O–O RDF" width="250"></td>
+    <td><img src="tests/cuRDF_results/rdf_HH_comparison.svg" alt="H–H RDF" width="250"></td>
+    <td><img src="tests/cuRDF_results/rdf_OH_comparison.svg" alt="O–H RDF" width="250"></td>
+  </tr>
+</table>
+
 
 ## Citation
 If you use cuRDF in your work, please cite:
