@@ -227,6 +227,11 @@ def compute_rdf(
     elif group_a_mask is not None:
         group_b_mask = group_a_mask
 
+    cross_mode = group_a_mask is not None and group_b_mask is not None and not torch.equal(
+        group_a_mask, group_b_mask
+    )
+    half_fill_eff = False if cross_mode else half_fill
+
     total_norm = _update_counts(
         counts,
         pos_t,
@@ -235,7 +240,7 @@ def compute_rdf(
         edges=edges,
         r_min=r_min_eff,
         r_max=r_max,
-        half_fill=half_fill,
+        half_fill=half_fill_eff,
         max_neighbors=max_neighbors,
         method=method,
         r_min_floor=r_min_floor,
@@ -243,11 +248,8 @@ def compute_rdf(
         group_b_mask=group_b_mask,
     )
 
-    cross_mode = group_a_mask is not None and group_b_mask is not None and not torch.equal(
-        group_a_mask, group_b_mask
-    )
     centers, g_r = _finalize_gr(
-        counts, edges, total_norm, half_fill=half_fill, cross_mode=cross_mode
+        counts, edges, total_norm, half_fill=half_fill_eff, cross_mode=cross_mode
     )
     return centers.cpu().numpy(), g_r.cpu().numpy()
 
@@ -320,6 +322,9 @@ def accumulate_rdf(
             group_a_mask, group_b_mask
         ):
             cross_flag = True
+            half_fill_frame = False
+        else:
+            half_fill_frame = half_fill
 
         norm = _update_counts(
             counts,
@@ -329,7 +334,7 @@ def accumulate_rdf(
             edges=edges,
             r_min=r_min_eff,
             r_max=r_max,
-            half_fill=half_fill,
+            half_fill=half_fill_frame,
             max_neighbors=max_neighbors,
             method=method,
             r_min_floor=r_min_floor,
@@ -338,11 +343,12 @@ def accumulate_rdf(
         )
         total_norm += norm
 
+    half_fill_eff = False if cross_flag else half_fill
     centers, g_r = _finalize_gr(
         counts,
         edges,
         total_norm,
-        half_fill=half_fill,
+        half_fill=half_fill_eff,
         cross_mode=cross_flag,
     )
     return centers.cpu().numpy(), g_r.cpu().numpy()
@@ -354,6 +360,7 @@ def rdf(
     species_b: str | None = None,
     index=None,
     atom_types_map: dict | None = None,
+    pbc: tuple[bool, bool, bool] | None = None,
     method: str = "cell_list",
     outdir=None,
     output: str | None = None,
@@ -374,6 +381,8 @@ def rdf(
         Optional index/selector forwarded to source-specific readers.
     atom_types_map
         Optional mapping for numeric atom types to element names.
+    pbc
+        Optional periodic boundary flags; defaults to (True, True, True) when omitted.
     method
         Neighbor-list method name (e.g., ``"cell_list"`` or ``"naive"``).
     outdir
@@ -398,6 +407,7 @@ def rdf(
             species_b=species_b,
             index=index,
             atom_types_map=atom_types_map,
+            pbc=pbc if pbc is not None else (True, True, True),
             method=method,
             **kwargs,
         )
@@ -410,6 +420,7 @@ def rdf(
             species_b=species_b,
             index=index,
             atom_types_map=atom_types_map,
+            pbc=pbc if pbc is not None else (True, True, True),
             method=method,
             **kwargs,
         )
@@ -423,6 +434,7 @@ def rdf(
             species_b=species_b,
             index=index,
             atom_types_map=atom_types_map,
+            pbc=pbc if pbc is not None else (True, True, True),
             method=method,
             **kwargs,
         )
