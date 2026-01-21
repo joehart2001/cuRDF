@@ -32,9 +32,9 @@ RDFs for liquid water (MACE reference trajectory) match reference curves for all
 
 <table>
   <tr>
-    <td><img src="tests/cuRDF_results/rdf_OO_comparison.png" alt="O–O RDF" width="250"></td>
-    <td><img src="tests/cuRDF_results/rdf_HH_comparison.png" alt="H–H RDF" width="250"></td>
-    <td><img src="tests/cuRDF_results/rdf_OH_comparison.png" alt="O–H RDF" width="250"></td>
+    <td><img src="tests/cuRDF_results/rdf_OO_comparison.pdf" alt="O–O RDF" width="250"></td>
+    <td><img src="tests/cuRDF_results/rdf_HH_comparison.pdf" alt="H–H RDF" width="250"></td>
+    <td><img src="tests/cuRDF_results/rdf_OH_comparison.pdf" alt="O–H RDF" width="250"></td>
   </tr>
 </table>
 

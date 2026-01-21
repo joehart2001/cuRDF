@@ -34,9 +34,14 @@ def test_compute_rdf_cuda_runs():
             )
             plt.plot(bins, gr, label=f"cuRDF - {species_a}-{species_b}")
             plt.plot(r_ref, gr_ref, label=f"Reference - {species_a}-{species_b}")
-            plt.ylim(0, 3)
+            plt.xlabel("r (Å)")
+            plt.ylabel("g(r)")
+            plt.title(f"RDF {species_a}-{species_b}")
+            plt.ylim(0,)
+            plt.xlim(0, RMAX)
             plt.legend()
-            plt.savefig(f"cuRDF_results/rdf_{species_a}{species_b}_comparison.png")
+            plt.tight_layout()
+            plt.savefig(f"cuRDF_results/rdf_{species_a}{species_b}_comparison.pdf")
             plt.close()
             # Numerical check: bins should align and g(r) should match reference within 1% relative.
             assert bins.shape == r_ref.shape
