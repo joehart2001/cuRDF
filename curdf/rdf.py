@@ -99,13 +99,19 @@ def _update_counts(
     counts.scatter_add_(0, bin_idx, torch.ones_like(bin_idx, dtype=torch.int64))
 
     volume = cell_volume(cell)
+
     if group_a_mask is not None and group_b_mask is not None:
         n_a = group_a_mask.sum().item()
         n_b = group_b_mask.sum().item()
-        norm_factor = n_a * (n_b / volume)
+        # Check if same species
+        if torch.equal(group_a_mask, group_b_mask):
+            norm_factor = n_a * ((n_b - 1) / volume)  # Exclude self-pairs
+        else:
+            norm_factor = n_a * (n_b / volume)  # Different species
     else:
         n_atoms = positions.shape[0]
-        norm_factor = n_atoms * (n_atoms / volume)  # n_atoms * rho
+        norm_factor = n_atoms * ((n_atoms - 1) / volume)  # Exclude self-pairs
+
     return norm_factor
 
 

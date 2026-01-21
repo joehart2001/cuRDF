@@ -30,14 +30,19 @@ def test_compute_rdf_cuda_runs():
                 r_min=RMIN,
                 r_max=RMAX,
                 nbins=N_BINS,
+                output=f"cuRDF_results/rdf_{species_a}{species_b}.csv"
             )
-            plt.plot(bins, gr, label="cuRDF")
-            plt.plot(r_ref, gr_ref, label="Reference")
+            plt.plot(bins, gr, label=f"cuRDF - {species_a}-{species_b}")
+            plt.plot(r_ref, gr_ref, label=f"Reference - {species_a}-{species_b}")
+            plt.ylim(0, 3)
             plt.legend()
-            plt.savefig(f"rdf_{species_a}{species_b}_comparison.png")
+            plt.savefig(f"cuRDF_results/rdf_{species_a}{species_b}_comparison.png")
             plt.close()
-            for gr_val in gr:
-                assert gr_val == pytest.approx(gr_ref, rel=1e-2)
+            # Numerical check: bins should align and g(r) should match reference within 1% relative.
+            assert bins.shape == r_ref.shape
+            assert gr.shape == gr_ref.shape
+            np.testing.assert_allclose(bins, r_ref, rtol=1e-6, atol=1e-6)
+            np.testing.assert_allclose(gr, gr_ref, rtol=1e-2, atol=1e-3)
         except RuntimeError as err:
             pytest.skip(f"CUDA neighbor list unavailable: {err}")
         

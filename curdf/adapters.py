@@ -370,22 +370,32 @@ def rdf_from_ase(
             pbc_tuple = tuple(bool(x) for x in pbc)
             wrap_flag = wrap_positions and all(pbc_tuple)
             pos_all = frame.get_positions(wrap=wrap_flag)
-            pos_a = pos_all[idx_a]
-            pos_b = pos_all[idx_b]
-            pos = np.concatenate([pos_a, pos_b], axis=0)
             cell = np.array(frame.get_cell().array, dtype=np.float32)
-            group_a_mask = np.zeros(len(pos), dtype=bool)
-            group_b_mask = np.zeros(len(pos), dtype=bool)
-            group_a_mask[: len(pos_a)] = True
-            group_b_mask[len(pos_a) :] = True
+            
+            if same_species:
+                # Same-species: keep one group so half_fill + pair_factor=2 normalisation stays correct
+                yield {
+                    "positions": pos_all[idx_a].astype(np.float32, copy=False),
+                    "cell": cell,
+                    "pbc": pbc_tuple,
+                }
+            else:
+                # Cross-species: concatenate and mask groups for ordered pairs
+                pos_a = pos_all[idx_a]
+                pos_b = pos_all[idx_b]
+                pos = np.concatenate([pos_a, pos_b], axis=0)
+                group_a_mask = np.zeros(len(pos), dtype=bool)
+                group_b_mask = np.zeros(len(pos), dtype=bool)
+                group_a_mask[: len(pos_a)] = True
+                group_b_mask[len(pos_a) :] = True
 
-            yield {
-                "positions": pos.astype(np.float32, copy=False),
-                "cell": cell,
-                "pbc": pbc_tuple,
-                "group_a_mask": group_a_mask,
-                "group_b_mask": group_b_mask,
-            }
+                yield {
+                    "positions": pos.astype(np.float32, copy=False),
+                    "cell": cell,
+                    "pbc": pbc_tuple,
+                    "group_a_mask": group_a_mask,
+                    "group_b_mask": group_b_mask,
+                }
 
     same_species = (
         (species_b is None or species_b == species_a)
