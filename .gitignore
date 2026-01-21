@@ -58,4 +58,5 @@ profile_default/
 ipython_config.py
 
 # benchmarking
-benchmarks/darren_data/
+tests/darren_data/
+tests/bulk-water-10frames-1242/
