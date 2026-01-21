@@ -57,6 +57,7 @@ def rdf_from_mdanalysis(
     r_max: float = 6.0,
     nbins: int = 100,
     r_min_floor: float = 1e-6,
+    pbc: tuple[bool, bool, bool] = (True, True, True),
     device="cuda",
     torch_dtype=None,
     half_fill: bool = True,
@@ -95,6 +96,8 @@ def rdf_from_mdanalysis(
         Number of histogram bins.
     r_min_floor
         Small lower bound to exclude pathological self/near-zero distances when ``r_min`` is zero.
+    pbc
+        Tuple of periodic boundary flags for (a, b, c) directions.
     device
         Torch device string or object used for computation.
     torch_dtype
@@ -161,7 +164,7 @@ def rdf_from_mdanalysis(
         raise ValueError(f"No atoms found for species_a='{species_a}' (check atom names or --atom-types mapping)")
     if len(ag_b) == 0:
         raise ValueError(f"No atoms found for species_b='{species_b or species_a}' (check atom names or --atom-types mapping)")
-    if wrap_positions and mda_wrap is not None:
+    if wrap_positions and mda_wrap is not None and all(pbc):
         ag_wrap = ag_a if selection_b is None else (ag_a | ag_b)
         universe.trajectory.add_transformations(mda_wrap(ag_wrap, compound="atoms"))
 
@@ -180,7 +183,7 @@ def rdf_from_mdanalysis(
                 yield {
                     "positions": ag_a.positions.astype(np.float32, copy=False),
                     "cell": cell,
-                    "pbc": (True, True, True),
+                    "pbc": tuple(pbc),
                 }
             else:
                 pos_a = ag_a.positions.astype(np.float32, copy=False)
@@ -193,7 +196,7 @@ def rdf_from_mdanalysis(
                 yield {
                     "positions": pos,
                     "cell": cell,
-                    "pbc": (True, True, True),
+                    "pbc": tuple(pbc),
                     "group_a_mask": group_a_mask,
                     "group_b_mask": group_b_mask,
                 }
@@ -253,6 +256,7 @@ def rdf_from_ase(
     r_max: float = 6.0,
     nbins: int = 100,
     r_min_floor: float = 1e-6,
+    pbc: tuple[bool, bool, bool] = (True, True, True),
     device="cuda",
     torch_dtype=None,
     half_fill: bool = True,
@@ -287,6 +291,8 @@ def rdf_from_ase(
         Number of histogram bins.
     r_min_floor
         Small lower bound to exclude pathological self/near-zero distances when ``r_min`` is zero.
+    pbc
+        Tuple of periodic boundary flags for (a, b, c) directions.
     device
         Torch device string or object used for computation.
     torch_dtype
@@ -361,12 +367,13 @@ def rdf_from_ase(
                     "Check element symbols or index selection."
                 )
 
-            pos_all = frame.get_positions(wrap=wrap_positions)
+            pbc_tuple = tuple(bool(x) for x in pbc)
+            wrap_flag = wrap_positions and all(pbc_tuple)
+            pos_all = frame.get_positions(wrap=wrap_flag)
             pos_a = pos_all[idx_a]
             pos_b = pos_all[idx_b]
             pos = np.concatenate([pos_a, pos_b], axis=0)
             cell = np.array(frame.get_cell().array, dtype=np.float32)
-            pbc = tuple(bool(x) for x in frame.get_pbc())
             group_a_mask = np.zeros(len(pos), dtype=bool)
             group_b_mask = np.zeros(len(pos), dtype=bool)
             group_a_mask[: len(pos_a)] = True
@@ -375,7 +382,7 @@ def rdf_from_ase(
             yield {
                 "positions": pos.astype(np.float32, copy=False),
                 "cell": cell,
-                "pbc": pbc,
+                "pbc": pbc_tuple,
                 "group_a_mask": group_a_mask,
                 "group_b_mask": group_b_mask,
             }
