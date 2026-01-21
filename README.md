@@ -28,7 +28,7 @@ pip install -e .
 
 ## Validation
 
-RDFs for liquid water (MACE reference trajectory) match reference curves for all pairs:
+RDFs for liquid water (64 atoms, 1 ns) match reference curves for all pairs (cite Darren paper):
 
 <table>
   <tr>
