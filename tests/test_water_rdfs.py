@@ -41,7 +41,9 @@ def test_compute_rdf_cuda_runs():
             plt.xlim(0, RMAX)
             plt.legend()
             plt.tight_layout()
+            plt.savefig(f"cuRDF_results/rdf_{species_a}{species_b}_comparison.png", dpi=300)
             plt.savefig(f"cuRDF_results/rdf_{species_a}{species_b}_comparison.pdf")
+            plt.savefig(f"cuRDF_results/rdf_{species_a}{species_b}_comparison.svg")
             plt.close()
             # Numerical check: bins should align and g(r) should match reference within 1% relative.
             assert bins.shape == r_ref.shape
