@@ -335,7 +335,7 @@ def rdf_from_ase(
 
             if atom_types_map:
                 # map numeric types to element names if provided
-                types = frame.get_array("numbers", int, None)
+                types = frame.get_array("numbers", False)
                 name_list = []
                 for t in types:
                     name = atom_types_map.get(t) or atom_types_map.get(str(t))
@@ -367,7 +367,10 @@ def rdf_from_ase(
                     "Check element symbols or index selection."
                 )
 
-            pbc_tuple = tuple(bool(x) for x in pbc)
+            if isinstance(pbc, Iterable):
+                pbc_tuple = tuple(bool(x) for x in pbc)
+            else:
+                pbc_tuple = (bool(pbc), bool(pbc), bool(pbc))
             wrap_flag = wrap_positions and all(pbc_tuple)
             pos_all = frame.get_positions(wrap=wrap_flag)
             cell = np.array(frame.get_cell().array, dtype=np.float32)
