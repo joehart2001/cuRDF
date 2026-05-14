@@ -80,7 +80,7 @@ bins, gr = rdf(
 
 ## Validation
 
-RDFs for liquid water (64 atoms, 1 ns) match reference curves for all pairs (cite Darren paper):
+RDFs for liquid water (64 atoms, 1 ns) computed using a trajectory from [Lim et al. (2026)](https://arxiv.org/abs/2601.20134) match reference curves for all pairs:
 
 <table>
   <tr>
