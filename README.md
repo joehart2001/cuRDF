@@ -98,7 +98,7 @@ If you use cuRDF in your work, please cite:
 ```
 @software{cuRDF,
   author    = {Hart, Joseph},
-  title     = {cuRDF: GPU-accelerated radial distribution functions},
+  title     = {cuRDF: CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch.},
   month     = dec,
   year      = 2025,
   publisher = {Zenodo},
