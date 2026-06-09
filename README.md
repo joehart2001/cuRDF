@@ -2,7 +2,7 @@
 
 ---
 
-[![DOI](https://zenodo.org/badge/1085332119.svg)](https://doi.org/10.5281/zenodo.1085332119) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/)
+[![DOI](https://zenodo.org/badge/20613283.svg)](https://doi.org/10.5281/zenodo.20613283) [![PyPI](https://img.shields.io/pypi/v/cuRDF.svg)](https://pypi.org/project/cuRDF/)
 
 
 CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops) O(N) neighbor lists and PyTorch. Compatible with ASE Atoms or MDAnalysis Universe objects.
@@ -99,11 +99,11 @@ If you use cuRDF in your work, please cite:
 @software{cuRDF,
   author    = {Hart, Joseph},
   title     = {cuRDF: CUDA-accelerated radial distribution functions using NVIDIA ALCHEMI Toolkit-Ops O(N) neighbor lists and PyTorch.},
-  month     = dec,
-  year      = 2025,
+  month     = jun,
+  year      = 2026,
   publisher = {Zenodo},
-  version   = {0.5.0},
-  doi       = {10.5281/zenodo.1085332119},
-  url       = {https://doi.org/10.5281/zenodo.1085332119}
+  version   = {0.5.4},
+  doi       = {10.5281/zenodo.20613283},
+  url       = {https://doi.org/10.5281/zenodo.20613283}
 }
 ```
