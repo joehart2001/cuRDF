@@ -7,6 +7,8 @@
 
 CUDA-accelerated radial distribution functions using [NVIDIA ALCHEMI Toolkit-Ops](https://github.com/NVIDIA/nvalchemi-toolkit-ops) O(N) neighbor lists and PyTorch. Compatible with ASE Atoms or MDAnalysis Universe objects.
 
+> **GPU required:** An NVIDIA GPU with CUDA is needed. For CUDA version selection, PyTorch wheel setup (CUDA 12 vs 13) and more information, see the [Toolkit-Ops installation guide](https://github.com/NVIDIA/nvalchemi-toolkit-ops).
+
 ## Benchmarking
 
 ![cuRDF benchmark](benchmarks/results/results.png)
