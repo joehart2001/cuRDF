@@ -93,6 +93,33 @@ RDFs for liquid water (64 atoms, 1 ns) computed using a trajectory from [Lim et 
 </table>
 
 
+## Documentation and development
+
+Documentation is published at <https://joehart2001.github.io/cuRDF/>.
+The `.github/workflows/docs.yml` workflow checks documentation builds on pull
+requests and deploys after each push to `main`. It can also be run manually
+from the Actions tab. GitHub Pages uses **Settings → Pages → Source: GitHub
+Actions**.
+
+Build the documentation locally with:
+
+```bash
+python -m pip install -e ".[docs]"
+sphinx-build -W --keep-going -b html docs/source docs/build/html
+```
+
+Run tests with:
+
+```bash
+python -m pip install -e ".[dev]"
+pytest -q
+```
+
+GitHub Actions runs tests on Python 3.11 and 3.12. Hosted runners exercise
+the core and adapter tests using a CPU neighbour-list stub. Tests requiring CUDA
+skip when no GPU is available.
+Toolkit-Ops requires Python 3.11 or newer.
+
 ## Citation
 If you use cuRDF in your work, please cite:
 ```

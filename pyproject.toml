@@ -44,7 +44,7 @@ classifiers = [
 Homepage = "https://github.com/joehart2001/cuRDF"
 Repository = "https://github.com/joehart2001/cuRDF"
 Issues = "https://github.com/joehart2001/cuRDF/issues"
-Documentation = "https://github.com/joehart2001/cuRDF#readme"
+Documentation = "https://joehart2001.github.io/cuRDF/"
 DOI = "https://doi.org/10.5281/zenodo.1085332119"
 
 [tool.setuptools]

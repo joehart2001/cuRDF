@@ -16,6 +16,7 @@ def test_compute_rdf_single_frame_two_atoms(stub_neighbor):
         r_min=0.0,
         r_max=5.0,
         nbins=5,
+        r_min_floor=0.0,
         device="cpu",
         torch_dtype=torch.float32,
         half_fill=True,
@@ -24,7 +25,8 @@ def test_compute_rdf_single_frame_two_atoms(stub_neighbor):
     shell_vol = (4.0 / 3.0) * math.pi * (2.0**3 - 1.0**3)
     volume = 10.0**3
     n_atoms = 2
-    rho = n_atoms / volume
+    # Each source atom has one possible partner, excluding itself.
+    rho = (n_atoms - 1) / volume
     expected = (2.0 * 1.0) / (shell_vol * (n_atoms * rho))
     assert math.isclose(gr[1], expected, rel_tol=1e-5)
 
@@ -42,6 +44,7 @@ def test_accumulate_rdf_multiple_frames(stub_neighbor):
         r_min=0.0,
         r_max=5.0,
         nbins=5,
+        r_min_floor=0.0,
         device="cpu",
         torch_dtype=torch.float32,
         half_fill=True,
@@ -105,6 +108,7 @@ def test_accumulate_rdf_forwards_method_all_frames(stub_neighbor):
         r_min=0.0,
         r_max=3.0,
         nbins=3,
+        r_min_floor=0.0,
         device="cpu",
         torch_dtype=torch.float32,
         half_fill=True,

@@ -27,5 +27,12 @@ u = mda.Universe("top.data", "traj.dcd")
 bins, gr = rdf(u, species_a="C", species_b="O", r_min=1.0, r_max=8.0, nbins=200)
 ```
 
-# CLI has been removed; use the Python API shown above.
-If the LAMMPS data file needs a specific atom_style, pass `--atom-style "id type x y z"` (default is the same).
+An NVIDIA GPU with CUDA is required for RDF calculations. The Python API is
+the supported interface.
+
+For a LAMMPS data file read through MDAnalysis, pass its atom style when creating
+the universe:
+
+```python
+u = mda.Universe("top.data", "traj.dcd", atom_style="id type x y z")
+```

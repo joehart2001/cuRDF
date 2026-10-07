@@ -9,7 +9,7 @@
 project = 'cuRDF'
 copyright = '2025, Joseph Hart'
 author = 'Joseph Hart'
-release = '0.0.1'
+release = '0.5.4'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -28,7 +28,7 @@ autodoc_mock_imports = [
     "numpy",
 ]
 
-templates_path = ['_templates']
+templates_path = []
 exclude_patterns = []
 
 language = 'Python'
@@ -37,7 +37,7 @@ language = 'Python'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_static_path = []
 
 source_suffix = {
     ".rst": "restructuredtext",
