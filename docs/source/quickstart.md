@@ -1,4 +1,2 @@
-# Quickstart
-
 ```{include} ../quickstart.md
 ```
