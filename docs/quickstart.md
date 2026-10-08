@@ -1,7 +1,16 @@
 # Quickstart
 
-Install (editable for development):
+Install the latest release from PyPI:
+
+```bash
+pip install cuRDF
 ```
+
+For development, clone the repository and install it in editable mode:
+
+```bash
+git clone https://github.com/joehart2001/curdf.git
+cd curdf
 pip install -e .
 ```
 
