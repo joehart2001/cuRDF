@@ -6,14 +6,23 @@
 cuRDF documentation
 ===================
 
-GPU-accelerated radial distribution functions with Toolkit-Ops + PyTorch. Built with Sphinx using a theme provided by Read the Docs.
+cuRDF computes GPU-accelerated radial distribution functions from ASE
+structures and MDAnalysis trajectories using NVIDIA ALCHEMI Toolkit-Ops and
+PyTorch.
+
+Start with the quickstart to install the package and compute a curve. The
+methods page explains normalization and periodic boundaries. The API reference
+lists parameters and output formats, and troubleshooting covers setup and
+input errors.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    quickstart
+   methods
    api
+   troubleshooting
 
 Citation
 --------

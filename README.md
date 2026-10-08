@@ -96,6 +96,10 @@ RDFs for liquid water (64 atoms, 1 ns) computed using a trajectory from [Lim et 
 ## Documentation and development
 
 Documentation is published at <https://joehart2001.github.io/cuRDF/>.
+It includes a [quickstart](https://joehart2001.github.io/cuRDF/quickstart.html),
+[method definitions](https://joehart2001.github.io/cuRDF/methods.html),
+the [API reference](https://joehart2001.github.io/cuRDF/api.html), and
+[troubleshooting](https://joehart2001.github.io/cuRDF/troubleshooting.html).
 The `.github/workflows/docs.yml` workflow checks documentation builds on pull
 requests and deploys after each push to `main`. It can also be run manually
 from the Actions tab. GitHub Pages uses **Settings → Pages → Source: GitHub
